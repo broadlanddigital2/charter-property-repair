@@ -91,7 +91,7 @@ Changes vs legacy behaviour:
 * `/product/<guid>` → `/product?guid=<guid>`, `/reset-password/<token>` → `/reset-password` (static export).
 * Customer portal gained the missing `/forgot-password` page.
 * Comparison list fetches only the compared products (legacy downloaded the whole catalogue).
-* Ideal Postcodes key moved to `NEXT_PUBLIC_IDEAL_POSTCODES_KEY`.
+* Address lookup uses the Broadland Digital CRM postcode service (Royal Mail PAF) instead of Ideal Postcodes; browser key in `NEXT_PUBLIC_POSTCODE_LOOKUP_KEY` (repo variable `POSTCODE_LOOKUP_KEY`).
 
 ```bash
 cd apps/portal   # or apps/admin
@@ -103,6 +103,8 @@ npm install && npm run dev
 GitHub Actions (`.github/workflows/deploy.yml`) on push to `main`:
 builds both apps and `wrangler deploy`s them, then `supabase db push` + `functions deploy`.
 
+Repository **variable** `POSTCODE_LOOKUP_KEY` (Settings → Secrets and variables → Actions → Variables): CRM postcode browser key.
+
 Repository secrets:
 
 | Secret | Used for |
@@ -111,7 +113,6 @@ Repository secrets:
 | `CLOUDFLARE_ACCOUNT_ID` | Workers deploy |
 | `SUPABASE_ACCESS_TOKEN` | `supabase` CLI (personal access token) |
 | `SUPABASE_DB_PASSWORD` | `supabase db push` |
-| `IDEAL_POSTCODES_KEY` | address lookup (rotate the key that was hard-coded in the legacy repo) |
 
 Staging hosts (custom domains on the Workers):
 `insurance-staging.broadlanddigital.co.uk`, `insurance-admin-staging.broadlanddigital.co.uk`.
@@ -133,7 +134,7 @@ and get an invite when an admin activates them.
 3. `update private.app_config` → production `PORTAL_URL` / `ADMIN_URL`, `SERVICEM8_NOTES_ENABLED = true`.
 4. Point `insurance.` / `insurance-admin.` at the Workers (change `routes` in each `wrangler.jsonc`), update Auth URL settings.
 5. Repoint the reporting consumer to `…/functions/v1/reporting-api/job-data` with the new `x-api-key`.
-6. Retire the Docker host; rotate the leaked TLS key, Ideal Postcodes key and BetterStack heartbeat.
+6. Retire the Docker host; rotate the leaked TLS key and BetterStack heartbeat; cancel the Ideal Postcodes key.
 
 ## Not ported
 * Supplier CSV importers (`ImportHowdensProducts`, `DuluxImporter`, price-band importers, …) — one-off loads whose data arrives via the migration. Re-add as an admin CSV import if new supplier feeds are expected.

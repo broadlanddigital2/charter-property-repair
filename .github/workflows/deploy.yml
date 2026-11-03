@@ -16,7 +16,8 @@ env:
   NEXT_PUBLIC_SUPABASE_URL: https://gnnabvwdlpsxmdgvthpi.supabase.co
   # publishable key is designed to be public (RLS protects the data)
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_EG2_UYY58zhY3zOrf8rSXw_JDCrvdr7
-  NEXT_PUBLIC_IDEAL_POSTCODES_KEY: ${{ secrets.IDEAL_POSTCODES_KEY }}
+  # Broadland Digital CRM postcode lookup (browser key: public by design, locked to our domains)
+  NEXT_PUBLIC_POSTCODE_LOOKUP_KEY: ${{ vars.POSTCODE_LOOKUP_KEY }}
 
 jobs:
   apps:

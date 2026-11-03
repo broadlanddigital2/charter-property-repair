@@ -4,6 +4,7 @@
 import axios from "axios";
 
 import {
+  TApiAddress,
   TApiAddressDetails,
   TBasket,
   TBasketLine,
@@ -126,10 +127,25 @@ export const getCategorySuppliers = async (categoryGUID: string) => {
 };
 
 export const getAddresses = async (postcode: string) => {
+  // Broadland Digital CRM postcode lookup (Royal Mail PAF), Ideal Postcodes-compatible.
+  // Needs a browser key (pk_…) from CRM → Settings → Postcode lookup, allowed for this site's domain.
+  const base = process.env.NEXT_PUBLIC_POSTCODE_LOOKUP_URL ||
+    "https://dipjypzrfigkzuarlsov.supabase.co/functions/v1/postcode-lookup";
   const { data } = await axios.get<TApiAddressDetails>(
-    `https://api.ideal-postcodes.co.uk/v1/postcodes/${encodeURIComponent(postcode)}/`,
-    { params: { api_key: process.env.NEXT_PUBLIC_IDEAL_POSTCODES_KEY } }
+    `${base}/v1/postcodes/${encodeURIComponent(postcode.trim())}`,
+    { params: { api_key: process.env.NEXT_PUBLIC_POSTCODE_LOOKUP_KEY } }
   );
+  // PAF has no county, and the town is `post_town`; map them to the fields the forms read
+  const toTitle = (s: string) => s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  data.result = (data.result || []).map((a) => {
+    const raw = a as TApiAddress & { post_town?: string };
+    return {
+      ...a,
+      district: a.district || (raw.post_town ? toTitle(raw.post_town) : ""),
+      county: a.county || "",
+      country: a.country || "United Kingdom",
+    };
+  });
   return data;
 };
 
