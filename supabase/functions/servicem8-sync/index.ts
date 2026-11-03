@@ -5,8 +5,14 @@
 //                                  (legacy Python servicem8 service import scripts)
 //   POST { "mode": "all" }
 // Auth: header x-cron-secret = CRON_SECRET (pg_cron), or an admin user's JWT.
+//
+// Customers: read page by page and upserted as they arrive.
+// Reporting: edge functions get ~2s CPU per call, so each call loads only a few
+// ServiceM8 pages into reporting.raw_* tables, saves its position
+// (reporting.sync_state) and re-invokes itself; when everything is loaded a
+// one-off pg_cron job builds and publishes the report in SQL.
 import { callerContact, config, corsHeaders, isAdminContact, json, safeEqual, serviceClient } from "../_shared/http.ts";
-import { type SM8Record, sm8List } from "../_shared/servicem8.ts";
+import { type SM8Record, sm8Page, sm8Pages } from "../_shared/servicem8.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 const BATCH = 500;
@@ -20,31 +26,42 @@ Deno.serve(async (req) => {
     return json({ status: "failed", message: "Unauthorized" }, 401);
   }
 
-  const { mode = "customers" } = await req.json().catch(() => ({}));
-  const results: Record<string, unknown> = {};
+  const body = await req.json().catch(() => ({}));
+  const mode: string = body.mode ?? "customers";
 
-  for (const kind of mode === "all" ? ["customers", "reporting"] : [mode]) {
-    const { data: run } = await admin.from("sync_runs").insert({ kind }).select("id").single();
-    try {
-      const stats = kind === "reporting" ? await syncReporting(admin) : await syncCustomers(admin);
-      await admin.from("sync_runs").update({ finished_at: new Date().toISOString(), ok: true, stats }).eq("id", run!.id);
-      results[kind] = stats;
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      console.error(`[servicem8-sync:${kind}]`, e);
-      await admin.from("sync_runs").update({ finished_at: new Date().toISOString(), ok: false, error: message }).eq("id", run!.id);
-      return json({ status: "failed", kind, message }, 500);
+  try {
+    const results: Record<string, unknown> = {};
+    if (mode === "customers" || mode === "all") {
+      const { data: run } = await admin.from("sync_runs").insert({ kind: "customers" }).select("id").single();
+      try {
+        const stats = await syncCustomers(admin);
+        await admin.from("sync_runs").update({ finished_at: new Date().toISOString(), ok: true, stats }).eq("id", run!.id);
+        results.customers = stats;
+      } catch (e) {
+        await admin.from("sync_runs").update({ finished_at: new Date().toISOString(), ok: false, error: errMsg(e) }).eq("id", run!.id);
+        throw e;
+      }
     }
+    if (mode === "reporting" || mode === "all") {
+      results.reporting = await reportingChunk(admin, Boolean(body.continue));
+    }
+    return json({ status: "OK", results });
+  } catch (e) {
+    console.error(`[servicem8-sync:${mode}]`, e);
+    return json({ status: "failed", mode, message: errMsg(e) }, 500);
   }
-
-  const heartbeat = await config(admin, "BETTERSTACK_HEARTBEAT_URL");
-  if (heartbeat && (mode === "reporting" || mode === "all")) await fetch(heartbeat).catch(() => {});
-
-  return json({ status: "OK", results });
 });
 
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : (e as { message?: string })?.message ?? String(e));
+
+async function rpc<T = unknown>(admin: SupabaseClient, fn: string, args?: Record<string, unknown>): Promise<T> {
+  const { data, error } = await admin.rpc(fn, args);
+  if (error) throw new Error(`${fn}: ${error.message}`);
+  return data as T;
+}
+
 // ---------------------------------------------------------------------------
-// Customers: companies, contacts, jobs
+// helpers
 // ---------------------------------------------------------------------------
 async function upsertBatched(admin: SupabaseClient, table: string, rows: Record<string, unknown>[], onConflict: string) {
   for (let i = 0; i < rows.length; i += BATCH) {
@@ -67,39 +84,40 @@ const nz = (v: unknown) => (v === undefined || v === "" ? null : v);
 const uuidOrNull = (v: unknown) =>
   typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v) && !/^0{8}-/.test(v) ? v : null;
 
+// ---------------------------------------------------------------------------
+// Customers: companies, contacts, jobs
+// ---------------------------------------------------------------------------
 async function syncCustomers(admin: SupabaseClient) {
-  const [companies, contacts, jobs] = await Promise.all([
-    sm8List("company"),
-    sm8List("companycontact"),
-    sm8List("job"),
-  ]);
-
-  // Companies: ServiceM8 owns these fields; price band / active stay local.
-  await upsertBatched(
-    admin,
-    "companies",
-    companies.filter((c) => uuidOrNull(c.uuid) && c.name).map((c) => ({
-      service_mate_uuid: c.uuid,
-      name: c.name,
-      website: nz(c.website),
-      abn_number: nz(c.abn_number),
-      address: nz(c.address),
-      address_street: nz(c.address_street),
-      address_city: nz(c.address_city),
-      address_state: nz(c.address_state),
-      address_postcode: nz(c.address_postcode),
-      address_country: nz(c.address_country),
-      billing_address: nz(c.billing_address),
-      is_individual: String(c.is_individual) === "1",
-      badges: nz(c.badges),
-      fax_number: nz(c.fax_number),
-      tax_rate_uuid: uuidOrNull(c.tax_rate_uuid),
-      custom_field_payment_terms: nz(c.payment_terms),
-      parent_company_uuid: uuidOrNull(c.parent_company_uuid),
-      payment_terms: nz(c.payment_terms),
-    })),
-    "service_mate_uuid",
-  );
+  let companyCount = 0;
+  for await (const page of sm8Pages("company")) {
+    companyCount += page.length;
+    // ServiceM8 owns these fields; price band / active stay local.
+    await upsertBatched(
+      admin,
+      "companies",
+      page.filter((c) => uuidOrNull(c.uuid) && c.name).map((c) => ({
+        service_mate_uuid: c.uuid,
+        name: c.name,
+        website: nz(c.website),
+        abn_number: nz(c.abn_number),
+        address: nz(c.address),
+        address_street: nz(c.address_street),
+        address_city: nz(c.address_city),
+        address_state: nz(c.address_state),
+        address_postcode: nz(c.address_postcode),
+        address_country: nz(c.address_country),
+        billing_address: nz(c.billing_address),
+        is_individual: String(c.is_individual) === "1",
+        badges: nz(c.badges),
+        fax_number: nz(c.fax_number),
+        tax_rate_uuid: uuidOrNull(c.tax_rate_uuid),
+        custom_field_payment_terms: nz(c.payment_terms),
+        parent_company_uuid: uuidOrNull(c.parent_company_uuid),
+        payment_terms: nz(c.payment_terms),
+      })),
+      "service_mate_uuid",
+    );
+  }
 
   const companyIds = new Map(
     (await selectAll<{ id: string; service_mate_uuid: string }>(admin, "companies", "id, service_mate_uuid"))
@@ -110,40 +128,48 @@ async function syncCustomers(admin: SupabaseClient) {
   const existing = await selectAll<{ email: string; service_mate_uuid: string | null }>(admin, "contacts", "email, service_mate_uuid");
   const emailOwner = new Map(existing.map((c) => [c.email.toLowerCase(), c.service_mate_uuid]));
   const seen = new Set<string>();
-  const contactRows = contacts
-    .filter((c) => String(c.active ?? "1") === "1" && uuidOrNull(c.uuid) && c.email)
-    .filter((c) => {
-      const email = String(c.email).trim().toLowerCase();
-      if (seen.has(email)) return false;
-      seen.add(email);
-      const owner = emailOwner.get(email);
-      return owner === undefined || owner === c.uuid;
-    })
-    .map((c) => ({
-      service_mate_uuid: c.uuid,
-      company_id: companyIds.get(c.company_uuid) ?? null,
-      name: `${c.first ?? ""} ${c.last ?? ""}`.trim() || String(c.email),
-      email: String(c.email).trim(),
-      is_primary_contact: String(c.is_primary_contact) === "1",
-      phone: nz(c.phone),
-      mobile: nz(c.mobile),
-      type: nz(c.type) ?? "JOB",
-    }));
-  await upsertBatched(admin, "contacts", contactRows, "service_mate_uuid");
+  let contactCount = 0;
+  for await (const page of sm8Pages("companycontact")) {
+    const rows = page
+      .filter((c) => String(c.active ?? "1") === "1" && uuidOrNull(c.uuid) && c.email)
+      .filter((c) => {
+        const email = String(c.email).trim().toLowerCase();
+        if (seen.has(email)) return false;
+        seen.add(email);
+        const owner = emailOwner.get(email);
+        return owner === undefined || owner === c.uuid;
+      })
+      .map((c) => ({
+        service_mate_uuid: c.uuid,
+        company_id: companyIds.get(c.company_uuid) ?? null,
+        name: `${c.first ?? ""} ${c.last ?? ""}`.trim() || String(c.email),
+        email: String(c.email).trim(),
+        is_primary_contact: String(c.is_primary_contact) === "1",
+        phone: nz(c.phone),
+        mobile: nz(c.mobile),
+        type: nz(c.type) ?? "JOB",
+      }));
+    contactCount += rows.length;
+    await upsertBatched(admin, "contacts", rows, "service_mate_uuid");
+  }
 
   // Jobs: only for known companies; budget stays local.
-  const jobRows = jobs
-    .filter((j) => String(j.active ?? "1") === "1" && uuidOrNull(j.uuid) && companyIds.has(j.company_uuid))
-    .map((j) => ({
-      service_mate_uuid: j.uuid,
-      company_id: companyIds.get(j.company_uuid),
-      job_number: nz(j.generated_job_id),
-      job_address: nz(j.job_address),
-      status: nz(j.status),
-    }));
-  await upsertBatched(admin, "jobs", jobRows, "service_mate_uuid");
+  let jobCount = 0;
+  for await (const page of sm8Pages("job")) {
+    const rows = page
+      .filter((j) => String(j.active ?? "1") === "1" && uuidOrNull(j.uuid) && companyIds.has(j.company_uuid))
+      .map((j) => ({
+        service_mate_uuid: j.uuid,
+        company_id: companyIds.get(j.company_uuid),
+        job_number: nz(j.generated_job_id),
+        job_address: nz(j.job_address),
+        status: nz(j.status),
+      }));
+    jobCount += rows.length;
+    await upsertBatched(admin, "jobs", rows, "service_mate_uuid");
+  }
 
-  return { companies: companies.length, contacts: contactRows.length, jobs: jobRows.length };
+  return { companies: companyCount, contacts: contactCount, jobs: jobCount };
 }
 
 // ---------------------------------------------------------------------------
@@ -166,108 +192,123 @@ function parseList(v: unknown): string[] {
   }
 }
 
-async function syncReporting(admin: SupabaseClient) {
-  const [jobs, materials, companies, jobContacts, categories, badges, staff, queues] = await Promise.all([
-    sm8List("job"),
-    sm8List("jobmaterial"),
-    sm8List("company"),
-    sm8List("jobcontact"),
-    sm8List("category"),
-    sm8List("badge"),
-    sm8List("staff"),
-    sm8List("queue"),
-  ]);
+type SyncState = { run_id: number | null; step: number; cursor: string; pages: number; in_progress: boolean; updated_at: string | null };
 
-  const byUuid = (rows: SM8Record[]) => new Map(rows.map((r) => [r.uuid, r]));
-  const companyMap = byUuid(companies), categoryMap = byUuid(categories), badgeMap = byUuid(badges), staffMap = byUuid(staff);
-  const contactByJob = new Map<string, SM8Record>();
-  for (const c of jobContacts) if (!contactByJob.has(c.job_uuid)) contactByJob.set(c.job_uuid, c);
-  const materialsByJob = new Map<string, SM8Record[]>();
-  for (const m of materials) {
-    const list = materialsByJob.get(m.job_uuid) ?? [];
-    list.push(m);
-    materialsByJob.set(m.job_uuid, list);
+const STEPS = ["company", "category", "badge", "staff", "jobcontact", "jobmaterial", "job", "queue"] as const;
+const PAGES_PER_CALL = 3;
+const MS_PER_CALL = 25_000;
+
+/** Map one ServiceM8 page to the minimal rows stored in reporting.raw_*. */
+function toRaw(resource: (typeof STEPS)[number], records: SM8Record[]): Record<string, unknown>[] {
+  const num = (v: unknown) => { const n = parseFloat(String(v ?? "")); return Number.isFinite(n) ? n : null; };
+  switch (resource) {
+    case "company": case "category": case "badge":
+      return records.filter((r) => uuidOrNull(r.uuid)).map((r) => ({ uuid: r.uuid, name: r.name ?? null }));
+    case "staff":
+      return records.filter((r) => uuidOrNull(r.uuid))
+        .map((r) => ({ uuid: r.uuid, name: `${r.first ?? ""} ${r.last ?? ""}`.trim() || null }));
+    case "jobcontact":
+      return records.filter((r) => uuidOrNull(r.job_uuid)).map((r) => ({ job_uuid: r.job_uuid, first: r.first ?? null, last: r.last ?? null }));
+    case "jobmaterial":
+      return records.filter((r) => uuidOrNull(r.job_uuid)).map((r) => ({
+        job_uuid: r.job_uuid, price: num(r.price), cost: num(r.cost),
+        quantity: r.quantity == null ? null : String(r.quantity), name: r.name ?? null, active: String(r.active ?? ""),
+      }));
+    case "job":
+      return records.filter((j) => uuidOrNull(j.uuid)).map((job) => {
+        const cf = (k: string) => cleanDate(job[`customfield_${k}`]);
+        return {
+          uuid: job.uuid,
+          company_uuid: uuidOrNull(job.company_uuid),
+          category_uuid: uuidOrNull(job.category_uuid),
+          completion_actioned_by_uuid: uuidOrNull(job.completion_actioned_by_uuid),
+          badge_uuids: parseList(job.badges),
+          row: {
+            job_number: nz(job.generated_job_id),
+            date: cleanDate(job.date),
+            job_status: nz(job.status),
+            job_address: nz(job.job_address),
+            invoice_date: cleanDate(job.invoice_sent_stamp),
+            po_number: nz(job.purchase_order_number),
+            description_of_work: nz(job.work_done_description),
+            work_completed: cleanDate(job.completion_date),
+            payment_method: nz(job.payment_method),
+            payment_amount: nz(job.payment_amount),
+            total_invoice_amount: nz(job.total_invoice_amount),
+            payment_received_date: cleanDate(job.payment_received_stamp),
+            completion_date: cleanDate(job.completion_date),
+            strip_out_date: cf("strip_out_date"),
+            actual_start_date: cf("actual_start_date"),
+            target_end_date: cf("target_end_date"),
+            actual_end_date: cf("actual_end_date"),
+            drying_start_date: cf("drying_start_date"),
+            drying_target_end_date: cf("drying_target_end_date"),
+            drying_actual_end_date: cf("drying_actual_end_date"),
+            works_approved_date: cf("works_approved_date"),
+            date_choices_and_excess_sent: cf("date_choices_and_excess_sent"),
+            date_choices_and_excess_received: cf("date_choices_and_excess_received"),
+            start_date: cf("start_date"),
+            target_start_date: cf("target_start_date"),
+          },
+        };
+      });
+    case "queue":
+      return records.filter((q) => uuidOrNull(q.uuid)).map((q) => ({
+        uuid: q.uuid,
+        subscribed: parseList(q.subscribed_staff),
+        row: {
+          name: q.name ?? "N/A",
+          default_timeframe: Number(q.default_timeframe ?? 0),
+          active: String(q.active ?? "1") === "1",
+          edit_date: cleanDate(q.edit_date),
+          requires_assignment: String(q.requires_assignment ?? "0") === "1",
+        },
+      }));
   }
-  const staffName = (uuid: string) => {
-    const s = staffMap.get(uuid);
-    const n = s ? `${s.first ?? ""} ${s.last ?? ""}`.trim() : "";
-    return n || null;
-  };
+}
 
-  const jobRows = jobs.filter((j) => uuidOrNull(j.uuid)).map((job) => {
-    let totalPrice = 0, totalCost = 0;
-    let invoiceNo: string | null = null;
-    for (const m of materialsByJob.get(job.uuid) ?? []) {
-      const price = parseFloat(m.price ?? "0"), cost = parseFloat(m.cost ?? "0");
-      const qty = parseFloat(m.quantity ?? "1");
-      const name = String(m.name ?? "");
-      if (m.quantity !== "-1.0000" && !name.includes("quote") && String(m.active) === "1") {
-        if (price > 0) totalPrice += price * qty;
-        else totalCost += cost * qty;
+async function reportingChunk(admin: SupabaseClient, isContinuation: boolean) {
+  let st = await rpc<SyncState>(admin, "sm8_state");
+
+  if (!isContinuation) {
+    const fresh = st.updated_at && Date.now() - Date.parse(st.updated_at) < 10 * 60_000;
+    if (st.in_progress && fresh) return { message: "Reporting sync already running", step: STEPS[st.step], pages: st.pages };
+    const { data: run } = await admin.from("sync_runs").insert({ kind: "reporting" }).select("id").single();
+    await rpc(admin, "sm8_raw_reset");
+    st = await rpc<SyncState>(admin, "sm8_state", {
+      p_patch: { run_id: run!.id, step: 0, cursor: "-1", pages: 0, in_progress: true, started_at: new Date().toISOString() },
+    });
+  } else if (!st.in_progress) {
+    return { message: "Nothing to continue" };
+  }
+
+  const started = Date.now();
+  let pagesThisCall = 0;
+  try {
+    while (st.step < STEPS.length) {
+      if (pagesThisCall >= PAGES_PER_CALL || Date.now() - started > MS_PER_CALL) {
+        await rpc(admin, "sm8_continue");
+        return { continued: true, step: STEPS[st.step], pages: st.pages };
       }
-      if (name.includes("Invoice No")) {
-        const after = name.split("Invoice No")[1].trim();
-        invoiceNo = after.includes("\n") ? after.split("\n")[0] : after.split(" ")[0];
+      const resource = STEPS[st.step];
+      const { records, next } = await sm8Page(resource, st.cursor);
+      const rows = toRaw(resource, records);
+      for (let i = 0; i < rows.length; i += 1000) {
+        await rpc(admin, "sm8_raw_insert", { p_resource: resource, p_rows: rows.slice(i, i + 1000) });
       }
+      pagesThisCall++;
+      st = await rpc<SyncState>(admin, "sm8_state", {
+        p_patch: next ? { cursor: next, pages: st.pages + 1 } : { step: st.step + 1, cursor: "-1", pages: st.pages + 1 },
+      });
     }
-    const contact = contactByJob.get(job.uuid);
-    const badgeNames = parseList(job.badges).map((u) => badgeMap.get(u)?.name).filter(Boolean).join(",");
-    const cf = (k: string) => cleanDate(job[`customfield_${k}`]);
-    return {
-      uuid: job.uuid,
-      job_number: nz(job.generated_job_id),
-      date: cleanDate(job.date),
-      job_status: nz(job.status),
-      company: companyMap.get(job.company_uuid)?.name ?? null,
-      contact_first: contact?.first ?? null,
-      contact_last: contact?.last ?? null,
-      completion_actioned_by_staff_member: staffName(job.completion_actioned_by_uuid),
-      job_address: nz(job.job_address),
-      invoice_date: cleanDate(job.invoice_sent_stamp),
-      po_number: nz(job.purchase_order_number),
-      description_of_work: nz(job.work_done_description),
-      work_completed: cleanDate(job.completion_date),
-      job_category: categoryMap.get(job.category_uuid)?.name ?? null,
-      invoice_no: invoiceNo,
-      payment_method: nz(job.payment_method),
-      payment_amount: nz(job.payment_amount),
-      total_invoice_amount: nz(job.total_invoice_amount),
-      total_cost: Math.round(totalCost * 100) / 100,
-      total_price: Math.round(totalPrice * 100) / 100,
-      payment_received_date: cleanDate(job.payment_received_stamp),
-      completion_date: cleanDate(job.completion_date),
-      badges: badgeNames || null,
-      strip_out_date: cf("strip_out_date"),
-      actual_start_date: cf("actual_start_date"),
-      target_end_date: cf("target_end_date"),
-      actual_end_date: cf("actual_end_date"),
-      drying_start_date: cf("drying_start_date"),
-      drying_target_end_date: cf("drying_target_end_date"),
-      drying_actual_end_date: cf("drying_actual_end_date"),
-      works_approved_date: cf("works_approved_date"),
-      date_choices_and_excess_sent: cf("date_choices_and_excess_sent"),
-      date_choices_and_excess_received: cf("date_choices_and_excess_received"),
-      start_date: cf("start_date"),
-      target_start_date: cf("target_start_date"),
-    };
-  });
-
-  const queueRows = queues.filter((q) => uuidOrNull(q.uuid)).map((q) => {
-    const names = parseList(q.subscribed_staff)
-      .map((item) => (item.length === 36 ? staffName(item) : item))
-      .filter(Boolean);
-    return {
-      uuid: q.uuid,
-      name: q.name ?? "N/A",
-      default_timeframe: Number(q.default_timeframe ?? 0),
-      active: String(q.active ?? "1") === "1",
-      edit_date: cleanDate(q.edit_date),
-      subscribed_staff: names.length ? names.join(", ") : null,
-      requires_assignment: String(q.requires_assignment ?? "0") === "1",
-    };
-  });
-
-  const { data, error } = await admin.rpc("sm8_replace_reporting", { p_jobs: jobRows, p_queues: queueRows });
-  if (error) throw new Error(`reporting write: ${error.message}`);
-  return data;
+    // everything loaded: build + publish in the database (no API statement timeout)
+    await rpc(admin, "sm8_schedule_build");
+    return { loaded: true, pages: st.pages, message: "Building report" };
+  } catch (e) {
+    if (st.run_id) {
+      await admin.from("sync_runs").update({ finished_at: new Date().toISOString(), ok: false, error: errMsg(e) }).eq("id", st.run_id);
+    }
+    await admin.rpc("sm8_state", { p_patch: { in_progress: false } });
+    throw e;
+  }
 }
