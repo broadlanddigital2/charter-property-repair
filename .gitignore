@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+.wrangler/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+supabase/.temp/
+supabase/.branches/
+# never commit data exports
+*.sql.gz
+scripts/migrate/*.sql

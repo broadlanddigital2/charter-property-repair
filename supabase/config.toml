@@ -1,0 +1,24 @@
+project_id = "charter-property-repair"
+
+[api]
+schemas = ["public", "graphql_public"]
+
+[auth]
+site_url = "https://insurance-staging.broadlanddigital.co.uk"
+additional_redirect_urls = [
+  "https://insurance-staging.broadlanddigital.co.uk/reset-password",
+  "https://insurance-admin-staging.broadlanddigital.co.uk/reset-password",
+  "http://localhost:3000/reset-password",
+]
+
+[functions.place-order]
+verify_jwt = true
+
+[functions.admin-users]
+verify_jwt = true
+
+[functions.servicem8-sync]
+verify_jwt = false   # authenticates via x-cron-secret or admin JWT itself
+
+[functions.reporting-api]
+verify_jwt = false   # authenticates via x-api-key or admin JWT itself
