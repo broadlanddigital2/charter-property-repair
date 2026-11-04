@@ -49,7 +49,7 @@ export async function requireSession() {
 /** Invoke an edge function, surfacing its JSON error message. */
 export async function invoke<T>(name: string, body: unknown): Promise<T> {
   await requireSession();
-  const { data, error } = await supabase.functions.invoke(name, { body });
+  const { data, error } = await supabase.functions.invoke(name, { body: body as Record<string, unknown> });
   if (error) {
     let message = error.message;
     let status = 500;
