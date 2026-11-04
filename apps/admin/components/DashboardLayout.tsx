@@ -28,6 +28,7 @@ import {
   cilAccountLogout,
   cilBasket,
   cilBuilding,
+  cilHome,
   cilMenu,
   cilPeople,
   cilSitemap,
@@ -46,6 +47,7 @@ const NAV: TNavItem[] = [
   { href: "/users", text: "Users", icon: cilPeople },
   { section: "Catalogue" },
   { href: "/products", text: "Products", icon: cilBasket },
+  { href: "/rooms", text: "Rooms", icon: cilHome },
   { href: "/categories", text: "Categories", icon: cilSitemap },
   { href: "/suppliers", text: "Suppliers", icon: cilTruck },
 ];

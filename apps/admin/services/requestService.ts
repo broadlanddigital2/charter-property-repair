@@ -16,6 +16,9 @@ import {
   Product,
   TCategoryTree,
   TJob,
+  TRoom,
+  TRoomRule,
+  TProductRoom,
 } from "@/types/api";
 import { TUserFormData } from "@/containers/UsersPage/UsersPage";
 import { apiError, invoke, requireSession, supabase, unwrap } from "./supabase";
@@ -347,13 +350,46 @@ export const getProductsPage = async ({
   search,
   page = 1,
   perPage = 10,
+  room,
 }: {
   search?: string;
   page?: number;
   perPage?: number;
+  /** room slug, or "none" for products without a room */
+  room?: string;
 }) => {
   const res = unwrap(
-    await supabase.rpc("api_products_page", { p_search: search || null, p_page: page, p_per_page: perPage })
+    await supabase.rpc("api_products_page", {
+      p_search: search || null,
+      p_page: page,
+      p_per_page: perPage,
+      p_room: room || null,
+    })
   ) as { total: number; data: Product[] };
   return { products: res.data, total: res.total };
 };
+
+// ---------------------------------------------------------------------------
+// Rooms
+// ---------------------------------------------------------------------------
+export const getRooms = async () => unwrap(await supabase.rpc("api_rooms")) as TRoom[];
+
+/** Override a product's rooms; pass null to go back to the automatic rules. */
+export const setProductRooms = async (productGUID: string, rooms: string[] | null) =>
+  unwrap(await supabase.rpc("api_set_product_rooms", { p_product: productGUID, p_rooms: rooms })) as {
+    rooms: TProductRoom[];
+    rooms_manual: boolean;
+  };
+
+export const getRoomRules = async () =>
+  unwrap(
+    await supabase
+      .from("room_rules")
+      .select("id, supplier, category, name_pattern, rooms, priority, origin, note, active")
+      .order("supplier")
+      .order("priority", { ascending: false })
+      .order("category", { nullsFirst: true })
+  ) as TRoomRule[];
+
+export const updateRoomRule = async (id: string, patch: Partial<Omit<TRoomRule, "id">>) =>
+  unwrap(await supabase.from("room_rules").update(patch).eq("id", id).select().single()) as TRoomRule;

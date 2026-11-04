@@ -134,6 +134,24 @@ export type Product = {
   guid: string;
   category?: TCategory;
   supplier?: TSupplier;
+  rooms?: TProductRoom[];
+  rooms_manual?: number;
+};
+
+export type TProductRoom = { slug: string; name: string };
+
+export type TRoom = { guid: string; slug: string; name: string; sort: number; products: number };
+
+export type TRoomRule = {
+  id: string;
+  supplier: string;
+  category: string | null;
+  name_pattern: string | null;
+  rooms: string[];
+  priority: number;
+  origin: "sheet" | "suggested" | "manual";
+  note: string | null;
+  active: boolean;
 };
 
 export type TCategory = {

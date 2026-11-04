@@ -2,11 +2,13 @@ import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
 import {
   getCategories,
   getPriceBands,
   getProductsPage,
+  getRooms,
   getSuppliers,
   removeProduct,
   updateProduct,
@@ -18,6 +20,7 @@ import {
   Product,
   TCategory,
   TPriceBandsCategory,
+  TRoom,
   TSupplier,
 } from "@/types/api";
 import { useStores } from "@/hooks/useStores";
@@ -29,6 +32,8 @@ import ProductForm from "./ProductForm";
 import SearchBar from "@/components/SearchBar";
 import ProductImage from "@/components/ProductImage";
 import Pagination from "@/components/Pagination";
+import RoomBadges from "@/components/RoomBadges";
+import ProductRooms from "./ProductRooms";
 import withAuth from "@/hoc/withAuth";
 
 const Products = () => {
@@ -48,6 +53,20 @@ const Products = () => {
   const [imagePreview, setImagePreview] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSavedSuccessfully, setIsSavedSuccessfully] = useState(false);
+  const [rooms, setRooms] = useState<TRoom[]>([]);
+  const [roomFilter, setRoomFilter] = useState<string>("");
+  const router = useRouter();
+
+  // deep link from the Rooms screen: /products?room=kitchen
+  useEffect(() => {
+    if (!router.isReady) return;
+    const q = router.query.room;
+    if (typeof q === "string" && q !== roomFilter) {
+      setRoomFilter(q);
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.room]);
 
   const { register, handleSubmit, setValue, getValues, reset } = useForm<any>();
 
@@ -65,11 +84,14 @@ const Products = () => {
           { categories },
           { suppliers },
           { price_bands: priceBandCategories },
+          roomList,
         ] = await Promise.all([
           getCategories(),
           getSuppliers(),
           getPriceBands(),
+          getRooms(),
         ]);
+        setRooms(roomList);
 
         setCategories(categories);
         setSuppliers(suppliers);
@@ -84,7 +106,7 @@ const Products = () => {
 
   // the catalogue is large (30k+), so the list is loaded a page at a time
   const handleGetProducts = async (page = currentPage) => {
-    const { products, total } = await getProductsPage({ page, perPage: PER_PAGE });
+    const { products, total } = await getProductsPage({ page, perPage: PER_PAGE, room: roomFilter });
     setProducts(products);
     setTotalProducts(total);
   };
@@ -101,7 +123,12 @@ const Products = () => {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  }, [currentPage, roomFilter]);
+
+  const handleRoomFilter = (slug: string) => {
+    setRoomFilter(slug);
+    setCurrentPage(1);
+  };
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -328,6 +355,40 @@ const Products = () => {
             />
           )}
 
+        {selectedProduct && (
+          <ProductRooms
+            product={selectedProduct}
+            onChange={(newRooms, manual) => {
+              const patch = { rooms: newRooms, rooms_manual: manual ? 1 : 0 };
+              setSelectedProduct((p) => (p ? { ...p, ...patch } : p));
+              setProducts((list) => list.map((p) => (p.guid === selectedProduct.guid ? { ...p, ...patch } : p)));
+            }}
+          />
+        )}
+
+        <div className="d-flex flex-wrap gap-2 mb-3">
+          {[{ slug: "", name: "All rooms", products: undefined as number | undefined }, ...rooms].map((r) => (
+            <button
+              key={r.slug || "all"}
+              type="button"
+              className={`btn btn-sm rounded-pill ${roomFilter === r.slug ? "btn-primary" : "btn-outline-secondary"}`}
+              onClick={() => handleRoomFilter(r.slug)}
+            >
+              {r.name}
+              {r.products !== undefined && (
+                <span className="ms-1 opacity-75">{r.products.toLocaleString("en-GB")}</span>
+              )}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={`btn btn-sm rounded-pill ${roomFilter === "none" ? "btn-warning" : "btn-outline-warning"}`}
+            onClick={() => handleRoomFilter("none")}
+          >
+            No room
+          </button>
+        </div>
+
         <div className="card border-0 shadow-sm">
           <div className="card-header bg-body d-flex align-items-center">
             <span className="fw-semibold">Catalogue</span>
@@ -344,6 +405,7 @@ const Products = () => {
                   <th style={{ width: 72 }}></th>
                   <th>Product</th>
                   <th>Category</th>
+                  <th>Rooms</th>
                   <th>Grade</th>
                   <th className="text-end">Price</th>
                   <th style={{ width: 130 }}></th>
@@ -375,6 +437,9 @@ const Products = () => {
                       </div>
                     </td>
                     <td className="small">{product.category?.name ?? "—"}</td>
+                    <td style={{ maxWidth: 220 }}>
+                      <RoomBadges rooms={product.rooms} max={3} />
+                    </td>
                     <td>
                       {product.price_band ? (
                         <span className="badge text-bg-primary">Grade {product.price_band.band}</span>
