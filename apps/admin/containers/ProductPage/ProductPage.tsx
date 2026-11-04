@@ -27,6 +27,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Icons } from "@/components/Icons";
 import ProductForm from "./ProductForm";
 import SearchBar from "@/components/SearchBar";
+import ProductImage from "@/components/ProductImage";
 import Pagination from "@/components/Pagination";
 import withAuth from "@/hoc/withAuth";
 
@@ -284,10 +285,7 @@ const Products = () => {
               renderItem={(p: Product) => (
                 <div className="d-flex align-items-center gap-2">
                   <div className="border rounded bg-body-tertiary overflow-hidden flex-shrink-0" style={{ width: 36, height: 36 }}>
-                    {p.image && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    )}
+                    <ProductImage src={p.image} iconSize="sm" />
                   </div>
                   <div className="text-truncate">
                     <div className="fw-semibold text-truncate">{p.name}</div>
@@ -364,12 +362,7 @@ const Products = () => {
                         className="border rounded bg-body-tertiary d-flex align-items-center justify-content-center overflow-hidden"
                         style={{ width: 52, height: 52 }}
                       >
-                        {product.image ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={product.image} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        ) : (
-                          <span className="text-body-tertiary small">—</span>
-                        )}
+                        <ProductImage src={product.image} />
                       </div>
                     </td>
                     <td style={{ maxWidth: 420 }}>

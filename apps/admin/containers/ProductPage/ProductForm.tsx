@@ -9,6 +9,7 @@ import Input from "@/components/Input";
 import Button from "@/components/Button";
 import { Nullable } from "@/types/utils";
 import { Dropdown } from "@/components/Dropdown";
+import ProductImage from "@/components/ProductImage";
 import {
   Product,
   TCategory,
@@ -30,7 +31,7 @@ import {
   CRow,
 } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
-import { cilExternalLink, cilImage, cilX } from "@coreui/icons";
+import { cilExternalLink, cilX } from "@coreui/icons";
 
 const surfaces = ["Wall", "Floor"];
 
@@ -176,15 +177,7 @@ const ProductForm = ({
               className="d-flex align-items-center justify-content-center bg-body-tertiary rounded-top"
               style={{ height: 260, overflow: "hidden" }}
             >
-              {imagePreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={imagePreview} alt={selectedProduct.name} style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
-              ) : (
-                <div className="text-body-tertiary text-center">
-                  <CIcon icon={cilImage} size="3xl" />
-                  <div className="small mt-2">No image</div>
-                </div>
-              )}
+              <ProductImage src={imagePreview} alt={selectedProduct.name} fit="contain" iconSize="3xl" label="No image available" />
             </div>
             <CCardBody className="border-bottom">
               <CFormLabel htmlFor="image" className="small fw-semibold mb-1">
@@ -340,8 +333,7 @@ const ProductForm = ({
                 <div className="d-flex flex-wrap gap-2 mb-3">
                   {gallery.map((src) => (
                     <a key={src} href={src} target="_blank" rel="noreferrer" className="border rounded overflow-hidden d-block" style={{ width: 84, height: 84 }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" />
+                      <ProductImage src={src} iconSize="sm" />
                     </a>
                   ))}
                 </div>
