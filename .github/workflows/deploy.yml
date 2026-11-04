@@ -57,6 +57,9 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      # Session pooler connection string (Dashboard -> Connect -> Session pooler).
+      # GitHub runners have no IPv6, so the direct db.<ref>.supabase.co host is unreachable.
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       PROJECT_REF: gnnabvwdlpsxmdgvthpi
     steps:
       - uses: actions/checkout@v4
@@ -69,7 +72,10 @@ jobs:
             echo "::warning::SUPABASE_ACCESS_TOKEN not set; skipping Supabase deploy"
             exit 0
           fi
-          # GitHub runners have no IPv6; linking with the DB password sets up the IPv4 pooler
           supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
           supabase functions deploy --remote="$PROJECT_REF" --yes
-          supabase db push --remote --password "$SUPABASE_DB_PASSWORD" --yes
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::warning::SUPABASE_DB_URL not set; skipping migrations (apply them from the dashboard or add the secret)"
+          else
+            supabase db push --db-url "$SUPABASE_DB_URL" --yes
+          fi

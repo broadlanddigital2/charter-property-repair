@@ -112,7 +112,8 @@ Repository secrets:
 | `CLOUDFLARE_API_TOKEN` | Workers deploy (template "Edit Cloudflare Workers" + Zone:DNS edit on broadlanddigital.co.uk) |
 | `CLOUDFLARE_ACCOUNT_ID` | Workers deploy |
 | `SUPABASE_ACCESS_TOKEN` | `supabase` CLI (personal access token) |
-| `SUPABASE_DB_PASSWORD` | `supabase db push` |
+| `SUPABASE_DB_PASSWORD` | `supabase link` |
+| `SUPABASE_DB_URL` | `supabase db push` — the **Session pooler** connection string (Dashboard → Connect), password filled in. Runners have no IPv6, so the direct host doesn't work |
 
 Staging hosts (custom domains on the Workers):
 `insurance-staging.broadlanddigital.co.uk`, `insurance-admin-staging.broadlanddigital.co.uk`.
