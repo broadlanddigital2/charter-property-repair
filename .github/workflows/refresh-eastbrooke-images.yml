@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: "Only process this many products (blank = all)"
+        description: "Only process this many products (0 = all)"
         required: false
         default: "25"
       apply:
