@@ -1,0 +1,18 @@
+name: Diagnose product images
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe image proxy and origins
+        run: |
+          probe() { printf '%-8s %s\n' "$(curl -s -o /tmp/b -w '%{http_code} %{content_type} %{size_download}B' -m 25 -A 'Mozilla/5.0' "$1")" "$1"; head -c 160 /tmp/b | tr -d '\0' | grep -a -v '^\xff' | head -2; echo; }
+          P=https://cpr-images.justin-b8f.workers.dev/?url=
+          for u in \
+            "http://www.eastbrooktrade.com/product/image/large/89.1555_0.jpeg" \
+            "https://dam-assets.apps.travisperkins.group/om5898z/GPID_1100898964_IMG_00.jpg?width=300" \
+            "https://www.howdens.com/-/media/howdens/assets/clh_asset_products/clh_asset_levela_108418/clh_asset_levelb_25421070/clh_asset_levelc_25421080/clh_asset_leveld_25528970/ass_prod_img_25534604.jpg" ; do
+            echo "== via proxy"; probe "$P$u"
+            echo "== direct";    probe "$u"
+          done
+          echo "== proxy root"; probe "https://cpr-images.justin-b8f.workers.dev/"
