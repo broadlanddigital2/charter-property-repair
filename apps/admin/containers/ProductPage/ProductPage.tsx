@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import {
   getCategories,
   getPriceBands,
+  getProduct,
   getProductsPage,
   getRooms,
   getSuppliers,
@@ -189,6 +190,22 @@ const Products = () => {
       setImagePreview('');
     }
   };
+
+  // deep link from the Categories screen: /products?product=<guid>
+  useEffect(() => {
+    if (!router.isReady) return;
+    const guid = router.query.product;
+    if (typeof guid !== "string" || selectedProduct?.guid === guid) return;
+    (async () => {
+      try {
+        const product = await getProduct(guid);
+        if (product) handleSelectProduct(product);
+      } catch (error) {
+        errorLogger(error, "Failed to load product");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.product]);
 
   const handleSearch = async (value: string) => {
     if (value === "") {

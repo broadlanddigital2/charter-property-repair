@@ -351,8 +351,11 @@ export const getProductsPage = async ({
   page = 1,
   perPage = 10,
   room,
+  category,
 }: {
   search?: string;
+  /** category guid; includes its sub-categories */
+  category?: string;
   page?: number;
   perPage?: number;
   /** room slug, or "none" for products without a room */
@@ -364,6 +367,7 @@ export const getProductsPage = async ({
       p_page: page,
       p_per_page: perPage,
       p_room: room || null,
+      p_category: category || null,
     })
   ) as { total: number; data: Product[] };
   return { products: res.data, total: res.total };
@@ -393,3 +397,10 @@ export const getRoomRules = async () =>
 
 export const updateRoomRule = async (id: string, patch: Partial<Omit<TRoomRule, "id">>) =>
   unwrap(await supabase.from("room_rules").update(patch).eq("id", id).select().single()) as TRoomRule;
+
+export type TCategoryCounts = Record<string, { own: number; total: number; suppliers: string[] }>;
+export const getCategoryCounts = async () =>
+  unwrap(await supabase.rpc("api_category_counts")) as TCategoryCounts;
+
+export const getProduct = async (guid: string) =>
+  unwrap(await supabase.rpc("api_product", { p_id: guid })) as Product | null;

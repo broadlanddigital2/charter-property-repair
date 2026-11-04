@@ -13,11 +13,14 @@ import DashboardLayout from "@/components/DashboardLayout";
 import {
   createCategory,
   deleteCategory,
+  getCategoryCounts,
   getCategoryTree,
+  type TCategoryCounts,
   updateCategory,
   uploadCategoryImage,
 } from "@/services/requestService";
 import CategoryTree from "./CategoryTree";
+import CategoryProducts from "./CategoryProducts";
 import Pagination from "@/components/Pagination";
 import SearchBar from "@/components/SearchBar";
 import withAuth from "@/hoc/withAuth";
@@ -45,6 +48,7 @@ const CategoriesPage = () => {
   const [image, setImage] = useState<File>();
   const [imagePreview, setImagePreview] = useState("");
   const [isSavedSuccessfully, setIsSavedSuccessfully] = useState(false);
+  const [counts, setCounts] = useState<TCategoryCounts>({});
 
   const { register, handleSubmit, reset, setValue } =
     useForm<TCategoryFormData>();
@@ -71,8 +75,9 @@ const CategoriesPage = () => {
   }, []);
 
   async function handleGetCategories() {
-    const { category_trees } = await getCategoryTree();
+    const [{ category_trees }, c] = await Promise.all([getCategoryTree(), getCategoryCounts()]);
     setCategoryTree(category_trees);
+    setCounts(c);
   }
 
   const handleStartCreatingCategory = () => {
@@ -292,7 +297,11 @@ const CategoriesPage = () => {
         )}
       </div>
 
-      {chunkedCategories?.length > 0 && (
+      {selectedCategory && !isCreatingNewCategory && (
+        <CategoryProducts categoryGUID={selectedCategory.guid} categoryName={selectedCategory.name} />
+      )}
+
+      {!selectedCategory && chunkedCategories?.length > 0 && (
         <>
           <table className="table table-hover align-middle mb-0 bg-white shadow-sm rounded overflow-hidden mt-4">
             <thead>
@@ -305,6 +314,10 @@ const CategoriesPage = () => {
                 <td className="p-2">
                   <b>Parent Category</b>
                 </td>
+                <td className="p-2 text-end">
+                  <b>Products</b>
+                </td>
+                <td></td>
               </tr>
             </thead>
 
@@ -313,29 +326,42 @@ const CategoriesPage = () => {
                 return (
                   <tr
                     key={category.guid}
-                    
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleSelectCategory(category)}
                   >
-                    <td className="p-2 pl-8">
+                    <td className="p-2 pl-8" onClick={(e) => e.stopPropagation()}>
                       <Icons.Bin
                         className="cursor-pointer"
-                        onClick={() => handleDeleteCategory(category.guid)}
+                        onClick={() => {
+                          if (window.confirm(`Delete "${category.name}"? This can't be undone.`)) {
+                            handleDeleteCategory(category.guid);
+                          }
+                        }}
                       />
                     </td>
 
                     <td className="p-2">
                       <p>{category.name}</p>
                     </td>
-                    <td className="min-w-[400px] p-2">
-                      <div className="flex pr-8 justify-between items-center">
-                        <p>
-                          {categories.find((c) => c.guid === category.parentId)
-                            ?.name || ""}
-                        </p>
-
-                        <Button size="sm" onClick={() => handleSelectCategory(category)}>
-                          View
-                        </Button>
-                      </div>
+                    <td className="p-2">
+                      {categories.find((c) => c.guid === category.parentId)?.name || (
+                        <span className="text-body-tertiary small">—</span>
+                      )}
+                    </td>
+                    <td className="p-2 text-end">
+                      <span className="badge text-bg-light">
+                        {(counts[category.guid]?.total ?? 0).toLocaleString("en-GB")}
+                      </span>
+                      {counts[category.guid]?.suppliers?.length ? (
+                        <div className="small text-body-secondary text-truncate" style={{ maxWidth: 220, marginLeft: "auto" }}>
+                          {counts[category.guid].suppliers.join(", ")}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="p-2 pr-4 text-end" onClick={(e) => e.stopPropagation()}>
+                      <Button size="sm" type="button" onClick={() => handleSelectCategory(category)}>
+                        View
+                      </Button>
                     </td>
                   </tr>
                 );
