@@ -280,13 +280,32 @@ const Products = () => {
             <SearchBar
               searchResults={searchResults}
               searchKeys={["sku", "name"]}
-              placeholder="Search for products"
+              placeholder="Search by product name or SKU"
+              renderItem={(p: Product) => (
+                <div className="d-flex align-items-center gap-2">
+                  <div className="border rounded bg-body-tertiary overflow-hidden flex-shrink-0" style={{ width: 36, height: 36 }}>
+                    {p.image && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    )}
+                  </div>
+                  <div className="text-truncate">
+                    <div className="fw-semibold text-truncate">{p.name}</div>
+                    <div className="small text-body-secondary">
+                      {p.sku}
+                      {p.supplier?.name ? ` · ${p.supplier.name}` : ""}
+                    </div>
+                  </div>
+                </div>
+              )}
               onSearch={handleSearch}
               onItemClick={handleSelectProduct}
             />
           </div>
 
-          {selectedProduct && (
+        </div>
+
+        {selectedProduct && (
             <ProductForm
               selectedProduct={selectedProduct}
               handleSubmit={handleSubmit}
@@ -310,79 +329,94 @@ const Products = () => {
               onCancelAction={handleCancelAction}
             />
           )}
+
+        <div className="card border-0 shadow-sm">
+          <div className="card-header bg-body d-flex align-items-center">
+            <span className="fw-semibold">Catalogue</span>
+            <span className="ms-2 text-body-secondary small">
+              {totalProducts > 0
+                ? `${((currentPage - 1) * PER_PAGE + 1).toLocaleString("en-GB")}–${Math.min(currentPage * PER_PAGE, totalProducts).toLocaleString("en-GB")} of ${totalProducts.toLocaleString("en-GB")} products`
+                : "No products"}
+            </span>
+          </div>
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th style={{ width: 72 }}></th>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Grade</th>
+                  <th className="text-end">Price</th>
+                  <th style={{ width: 130 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr
+                    key={product.guid}
+                    className={selectedProduct?.guid === product.guid ? "table-active" : undefined}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleSelectProduct(product)}
+                  >
+                    <td>
+                      <div
+                        className="border rounded bg-body-tertiary d-flex align-items-center justify-content-center overflow-hidden"
+                        style={{ width: 52, height: 52 }}
+                      >
+                        {product.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={product.image} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <span className="text-body-tertiary small">—</span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ maxWidth: 420 }}>
+                      <div className="fw-semibold text-truncate" title={product.name}>
+                        {product.name}
+                      </div>
+                      <div className="small text-body-secondary text-truncate">
+                        {product.sku}
+                        {product.supplier?.name ? ` · ${product.supplier.name}` : ""}
+                      </div>
+                    </td>
+                    <td className="small">{product.category?.name ?? "—"}</td>
+                    <td>
+                      {product.price_band ? (
+                        <span className="badge text-bg-primary">Grade {product.price_band.band}</span>
+                      ) : (
+                        <span className="text-body-tertiary small">—</span>
+                      )}
+                    </td>
+                    <td className="text-end text-nowrap">
+                      {product.price !== null && product.price !== undefined && product.price !== ""
+                        ? `£${Number(product.price).toLocaleString("en-GB")}`
+                        : <span className="text-body-tertiary small">—</span>}
+                    </td>
+                    <td className="text-end text-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <Button size="sm" type="button" onClick={() => handleSelectProduct(product)}>
+                        View
+                      </Button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost-danger ms-1"
+                        title="Delete product"
+                        onClick={() => {
+                          if (window.confirm(`Delete "${product.name}"? This can't be undone.`)) {
+                            handleRemoveProduct(product.guid);
+                          }
+                        }}
+                      >
+                        <Icons.Bin />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-
-        <table className="table table-hover align-middle mb-0 bg-white shadow-sm rounded overflow-hidden mt-4">
-          <thead>
-            <tr className="table-light">
-              <td></td>
-
-              <td className="p-2">
-                <b>SKU</b>
-              </td>
-              <td className="p-2">
-                <b>Supplier</b>
-              </td>
-              <td className="p-2">
-                <b>Category</b>
-              </td>
-              <td className="p-2">
-                <b>Product Name</b>
-              </td>
-              <td className="p-2">
-                <b>Description</b>
-              </td>
-              <td className="p-2">
-                <b>Grade</b>
-              </td>
-            </tr>
-          </thead>
-
-          <tbody>
-            {products.map((product, index) => (
-              <tr
-                key={product.sku}
-                
-              >
-                <td
-                  className="pl-8 pr-2 py-2 cursor-pointer"
-                  onClick={() => handleRemoveProduct(product.guid)}
-                >
-                  <Icons.Bin />
-                </td>
-
-                <td className="p-2 w-[115px]">
-                  <p>{product.sku}</p>
-                </td>
-                <td className="p-2 w-[255px]">
-                  <p>{product?.supplier?.name}</p>
-                </td>
-                <td className="p-2 w-[135px]">
-                  <p>{product?.category?.name}</p>
-                </td>
-                <td className="p-2 w-[140px]">
-                  <p>{product.name}</p>
-                </td>
-                <td className="p-2 w-[300px]">
-                  <p>{product.description}</p>
-                </td>
-                <td className="p-2 min-w-[300px]">
-                  <div className="flex my-2 pr-8 justify-between items-center">
-                    <span>
-                      {product.price_band
-                        ? `Grade ${product.price_band?.band}`
-                        : ""}
-                    </span>
-
-                    <Button size="sm" onClick={() => handleSelectProduct(product)}>
-                      View
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
 
         <Pagination
           currentPage={currentPage}
