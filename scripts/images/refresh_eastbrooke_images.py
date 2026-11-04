@@ -10,7 +10,7 @@ product page, whose <meta property="og:image"> points at their image CDN.
 
   python3 refresh_eastbrooke_images.py products.tsv results.tsv [--limit N]
 
-products.tsv: id<TAB>sku   (products whose image is still an old eastbrooktrade.com URL)
+products.tsv: id<TAB>sku<TAB>name   (products whose image is still an old eastbrooktrade.com URL)
 results.tsv:  id<TAB>sku<TAB>image_url<TAB>page_url   (only verified matches)
 
 Polite: robots.txt allows crawling; 2 workers, ~1 request/second each, reads
@@ -36,18 +36,20 @@ READ_BYTES = 400_000
 
 OG = re.compile(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', re.I)
 OG2 = re.compile(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', re.I)
+TITLE = re.compile(r"<title[^>]*>(.*?)</title>", re.I | re.S)
+STOP = {"x", "and", "with", "for", "the", "mm", "in", "of", "a", "-", "&"}
 
 
-def lookup(sku: str):
-    """Return (image_url, page_url, reason)."""
-    url = f"{BASE}/search?q={urllib.parse.quote(sku)}"
+def tokens(text: str) -> set[str]:
+    return {t for t in re.findall(r"[a-z0-9]+", text.lower()) if t not in STOP and len(t) > 1}
+
+
+def fetch(url: str):
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})
     for attempt in range(1, 4):
         try:
             with urllib.request.urlopen(req, timeout=40) as r:
-                final = r.geturl()
-                body = r.read(READ_BYTES).decode("utf-8", "replace")
-            break
+                return r.geturl(), r.read(READ_BYTES).decode("utf-8", "replace"), None
         except urllib.error.HTTPError as e:
             if e.code in (429, 500, 502, 503, 504) and attempt < 3:
                 time.sleep(10 * attempt)
@@ -58,20 +60,43 @@ def lookup(sku: str):
                 time.sleep(5 * attempt)
                 continue
             return None, None, f"error {type(e).__name__}"
+    return None, None, "error"
+
+
+def lookup(sku: str, name: str):
+    """Return (image_url, page_url, reason)."""
+    digits = re.sub(r"\D", "", sku)
+    final, body, err = fetch(f"{BASE}/search?q={urllib.parse.quote(sku)}")
+    if err:
+        return None, None, err
 
     path = urllib.parse.urlparse(final).path
     if path.startswith("/search") or path in ("", "/"):
-        return None, final, "no single match"
-    # Eastbrooke appends the SKU digits to the product URL (41.1019 -> ...-411019);
-    # accept if the URL or page carries the SKU.
-    digits = re.sub(r"\D", "", sku)
+        # results list: pick the product whose URL ends with the SKU digits
+        links = sorted(set(re.findall(r'href=["\'](/[^"\'#?]+-' + re.escape(digits) + r')["\']', body))) if digits else []
+        if len(links) != 1:
+            return None, final, "no single match" if not links else "ambiguous"
+        time.sleep(GAP)
+        final, body, err = fetch(BASE + links[0])
+        if err:
+            return None, None, err
+        path = urllib.parse.urlparse(final).path
+
+    # Eastbrooke appends the SKU digits to the product URL (41.1019 -> ...-411019)
     if not ((digits and path.endswith(digits)) or sku in body):
         return None, final, "page does not mention SKU"
+
+    # sanity check: the page title should share words with our product name
+    t = TITLE.search(body)
+    title = html.unescape(t.group(1)) if t else ""
+    ours = tokens(name)
+    if ours and len(ours & tokens(title + " " + path.replace("-", " "))) / len(ours) < 0.4:
+        return None, final, "name mismatch"
+
     m = OG.search(body) or OG2.search(body)
     if not m:
         return None, final, "no og:image"
-    img = html.unescape(m.group(1))
-    img = img.replace("/512x512/", "/1024x1024/")
+    img = html.unescape(m.group(1)).replace("/512x512/", "/1024x1024/")
     return img, final, "ok"
 
 
@@ -95,9 +120,9 @@ def main():
     with open(out, "w", encoding="utf-8") as fo:
         def work(row):
             nonlocal found, done
-            pid, sku = row[0], row[1]
+            pid, sku, name = row[0], row[1], (row[2] if len(row) > 2 else "")
             t0 = time.time()
-            img, page, reason = lookup(sku)
+            img, page, reason = lookup(sku, name)
             with lock:
                 done += 1
                 reasons[reason] = reasons.get(reason, 0) + 1
@@ -108,8 +133,8 @@ def main():
                 if done % 100 == 0 or done == len(rows):
                     rate = done / max(time.time() - started, 1)
                     print(f"  {done}/{len(rows)}  matched {found}  ({rate:.1f}/s)", flush=True)
-                if done <= 5:
-                    print(f"  sample: {sku} -> {reason} {img or ''}", flush=True)
+                if done <= 8 or (reason != "ok" and reasons[reason] <= 3):
+                    print(f"  sample: {sku} | {name[:50]} -> {reason} {page or ''}", flush=True)
             time.sleep(max(0, GAP - (time.time() - t0)))
 
         with cf.ThreadPoolExecutor(WORKERS) as ex:
