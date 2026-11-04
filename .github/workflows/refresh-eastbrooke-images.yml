@@ -30,7 +30,7 @@ jobs:
       - name: List products to refresh
         run: |
           psql "$SUPABASE_DB_URL" -At -F $'\t' -c \
-            "select id, sku, replace(name, E'\\t', ' ') from public.products where image ilike '%eastbrooktrade.com%' order by md5(id::text)" > "$RUNNER_TEMP/products.tsv"
+            "select id, sku, regexp_replace(name, E'[\\t\\r\\n]+', ' ', 'g') from public.products where image ilike '%eastbrooktrade.com%' order by md5(id::text)" > "$RUNNER_TEMP/products.tsv"
           echo "Products still on old Eastbrooke URLs: $(wc -l < "$RUNNER_TEMP/products.tsv")"
       - name: Look up current images
         run: |

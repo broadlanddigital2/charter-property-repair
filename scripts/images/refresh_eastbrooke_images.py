@@ -112,6 +112,7 @@ def main():
     limit = int(sys.argv[sys.argv.index("--limit") + 1]) if "--limit" in sys.argv else None
 
     rows = [line.rstrip("\n").split("\t") for line in open(src, encoding="utf-8") if line.strip()]
+    rows = [r for r in rows if len(r) >= 2 and r[1].strip()]
     if limit:
         rows = rows[:limit]
     print(f"Looking up {len(rows)} Eastbrooke products…", flush=True)
@@ -127,7 +128,10 @@ def main():
             nonlocal found, done
             pid, sku, name = row[0], row[1], (row[2] if len(row) > 2 else "")
             t0 = time.time()
-            img, page, reason = lookup(sku, name)
+            try:
+                img, page, reason = lookup(sku, name)
+            except Exception as e:  # one bad page must not end a 2-hour run
+                img, page, reason = None, None, f"error:{type(e).__name__}"
             with lock:
                 done += 1
                 reasons[reason] = reasons.get(reason, 0) + 1
