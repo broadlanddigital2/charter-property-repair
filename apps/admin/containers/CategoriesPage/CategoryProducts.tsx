@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 import Pagination from "@/components/Pagination";
@@ -19,6 +20,8 @@ const CategoryProducts = ({ categoryGUID, categoryName }: { categoryGUID: string
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const q = useDebounce(search, 350);
+  const router = useRouter();
+  const openProduct = (guid: string) => router.push(`/products?product=${guid}`);
 
   useEffect(() => setPage(1), [categoryGUID, q]);
 
@@ -71,21 +74,26 @@ const CategoryProducts = ({ categoryGUID, categoryName }: { categoryGUID: string
                 <th>Sub-category</th>
                 <th>Rooms</th>
                 <th className="text-end">Price</th>
-                <th style={{ width: 90 }}></th>
+                <th style={{ width: 80 }}></th>
               </tr>
             </thead>
             <tbody>
               {products.map((p) => (
-                <tr key={p.guid}>
+                <tr key={p.guid} style={{ cursor: "pointer" }} onClick={() => openProduct(p.guid)}>
                   <td>
                     <div className="border rounded bg-body-tertiary overflow-hidden" style={{ width: 44, height: 44 }}>
                       <ProductImage src={p.image} iconSize="sm" />
                     </div>
                   </td>
                   <td style={{ maxWidth: 380 }}>
-                    <div className="fw-semibold text-truncate" title={p.name}>
+                    <Link
+                      href={`/products?product=${p.guid}`}
+                      className="fw-semibold text-truncate d-block text-body"
+                      title={p.name}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {p.name}
-                    </div>
+                    </Link>
                     <div className="small text-body-secondary text-truncate">
                       {p.sku}
                       {p.supplier?.name ? ` · ${p.supplier.name}` : ""}
@@ -102,7 +110,7 @@ const CategoryProducts = ({ categoryGUID, categoryName }: { categoryGUID: string
                       <span className="text-body-tertiary small">—</span>
                     )}
                   </td>
-                  <td className="text-end">
+                  <td className="text-end" onClick={(e) => e.stopPropagation()}>
                     <Link href={`/products?product=${p.guid}`} className="btn btn-sm btn-outline-primary">
                       Open
                     </Link>

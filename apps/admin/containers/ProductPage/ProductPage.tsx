@@ -199,7 +199,12 @@ const Products = () => {
     (async () => {
       try {
         const product = await getProduct(guid);
-        if (product) handleSelectProduct(product);
+        if (product) {
+          handleSelectProduct(product);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          toast.error("Product not found");
+        }
       } catch (error) {
         errorLogger(error, "Failed to load product");
       }
