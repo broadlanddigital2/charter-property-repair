@@ -86,11 +86,15 @@ def lookup(sku: str, name: str):
     if not ((digits and path.endswith(digits)) or sku in body):
         return None, final, "page does not mention SKU"
 
-    # sanity check: the page title should share words with our product name
+    # strict check: the page must be the same product, not just mention the SKU.
+    # The first word of our name is the range (Madrid, Bonito, Stour...) and must
+    # appear in the page title/URL, and most of the other words must too.
     t = TITLE.search(body)
     title = html.unescape(t.group(1)) if t else ""
+    theirs = tokens(title + " " + path.replace("-", " ").replace("/", " "))
     ours = tokens(name)
-    if ours and len(ours & tokens(title + " " + path.replace("-", " "))) / len(ours) < 0.4:
+    first = next(iter(re.findall(r"[a-z]{3,}", name.lower())), None)
+    if not ours or (first and first not in theirs) or len(ours & theirs) / len(ours) < 0.6:
         return None, final, "name mismatch"
 
     m = OG.search(body) or OG2.search(body)
