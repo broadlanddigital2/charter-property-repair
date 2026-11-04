@@ -1,4 +1,4 @@
-import { ChangeEvent, useState, useEffect } from "react";
+import { ChangeEvent, ReactNode, useState, useEffect } from "react";
 
 import { Icon } from "./Icon";
 import useDebounce from "@/hooks/useDebounce";
@@ -10,6 +10,8 @@ type Props = {
   searchKeys: string[];
   onSearch: (value: string) => void;
   onItemClick: (item: any) => void;
+  /** Optional custom rendering of each result (defaults to the searchKeys values). */
+  renderItem?: (item: any) => ReactNode;
 };
 
 const SearchBar = ({
@@ -19,6 +21,7 @@ const SearchBar = ({
   searchKeys,
   onSearch,
   onItemClick,
+  renderItem,
 }: Props) => {
   const [searchValue, setSearchValue] = useState("");
 
@@ -63,7 +66,7 @@ const SearchBar = ({
                   setSearchValue("");
                 }}
               >
-                {renderSearchResults(searchKeys, item, item[placeholderKey])}
+                {renderItem ? renderItem(item) : renderSearchResults(searchKeys, item, item[placeholderKey])}
               </button>
             ))}
           </div>

@@ -40,6 +40,7 @@ export type TCompanyContact = {
   name: string;
   phone: string;
   type: string;
+  company_name?: string; // added client-side for search results
 };
 
 export type TCompany = {

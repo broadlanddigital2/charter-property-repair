@@ -92,7 +92,7 @@ const UsersPage = () => {
 
     filteredCompaniesWithContacts.forEach((company) => {
       company.contacts.forEach((contact) => {
-        filteredCompaniesContacts.push(contact);
+        filteredCompaniesContacts.push({ ...contact, company_name: company.name });
       });
     });
 
@@ -113,13 +113,12 @@ const UsersPage = () => {
     }
 
     const searchValueLowerCase = value.toLowerCase();
-    const foundUsers = companiesContacts.filter(
-      (contact) =>
-        contact?.email?.toLowerCase()?.includes(searchValueLowerCase) ||
-        contact?.name?.toLowerCase()?.includes(searchValueLowerCase)
+    const foundUsers = companiesContacts.filter((contact) =>
+      [contact?.name, contact?.email, contact?.company_name, contact?.phone, contact?.mobile]
+        .some((field) => field?.toLowerCase()?.includes(searchValueLowerCase))
     );
 
-    setSearchResults(foundUsers);
+    setSearchResults(foundUsers.slice(0, 50));
   };
 
   const handleSearchWithFilter = (value: string) => {
@@ -269,10 +268,37 @@ const UsersPage = () => {
             <SearchBar
               searchResults={searchResults}
               searchKeys={["name"]}
-              placeholder="Search for users"
+              placeholder="Search name, email, company or phone"
               placeholderKey="email"
               onSearch={handleSearch}
               onItemClick={handleSelectUser}
+              renderItem={(contact: TCompanyContact) => (
+                <div className="flex flex-col gap-y-0.5">
+                  <div className="flex items-center justify-between gap-x-3">
+                    <span className="font-semibold text-gray-900">{contact.name || "No name"}</span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        Number(contact.active)
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-200 text-gray-600"
+                      }`}
+                    >
+                      {Number(contact.active) ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-600">{contact.email}</span>
+                  <span className="text-xs text-gray-500">
+                    {[
+                      contact.company_name,
+                      contact.type,
+                      Number(contact.is_primary_contact) ? "Primary" : null,
+                      contact.mobile || contact.phone,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </div>
+              )}
             />
 
             {!isCreatingNewUser && (
