@@ -1,7 +1,8 @@
 import clsx from "clsx";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import { yupResolver } from "@hookform/resolvers/yup";
 
 import Button from "@/components/Button";
@@ -52,6 +53,9 @@ const UsersPage = () => {
   const [isSavedSuccessfully, setIsSavedSuccessfully] = useState(false);
   const [searchFilterValue, setSearchFilter] = useState("");
   const [totalPages, setTotalPages] = useState(0);
+  const [defaultCompanyGUID, setDefaultCompanyGUID] = useState<string | undefined>();
+  const router = useRouter();
+  const handledDeepLink = useRef(false);
 
   const {
     register,
@@ -101,6 +105,21 @@ const UsersPage = () => {
     const contactsChunks = chunkArray(filteredCompaniesContacts, 10);
     setChunkedContacts(contactsChunks);
   }
+
+  // Deep links from the Companies screen: /users?contact=<guid> or /users?new=1&company=<guid>
+  useEffect(() => {
+    if (handledDeepLink.current || !router.isReady || companiesContacts.length === 0) return;
+    const { contact, company, new: isNew } = router.query;
+    if (typeof contact === "string") {
+      const found = companiesContacts.find((c) => c.guid === contact);
+      if (found) handleSelectUser(found);
+    } else if (isNew && typeof company === "string") {
+      setDefaultCompanyGUID(company);
+      handleStartCreatingNewUser();
+    }
+    handledDeepLink.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query, companiesContacts]);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -310,7 +329,8 @@ const UsersPage = () => {
 
           {(selectedContact || isCreatingNewUser) && (
             <UserForm
-              key={selectedContact?.guid}
+              key={selectedContact?.guid || defaultCompanyGUID || "new"}
+              defaultCompanyGUID={selectedContact ? undefined : defaultCompanyGUID}
               companies={companies}
               selectedContact={selectedContact}
               isSavedSuccessfully={isSavedSuccessfully}

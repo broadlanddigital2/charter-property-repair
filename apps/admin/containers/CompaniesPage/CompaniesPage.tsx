@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
@@ -158,6 +159,17 @@ const CompaniesPage = () => {
     }
   };
 
+  // keep the selected company's details (incl. contacts) in step after a reload
+  const selectedCompanyFresh = selectedCompany
+    ? companies.find((c) => c.guid === selectedCompany.guid) || selectedCompany
+    : null;
+  const selectedContacts = [...(selectedCompanyFresh?.contacts || [])].sort(
+    (a, b) =>
+      Number(b.is_primary_contact) - Number(a.is_primary_contact) ||
+      Number(b.active) - Number(a.active) ||
+      (a.name || "").localeCompare(b.name || "")
+  );
+
   const handleSelectPriceBand = (value: string) => {
     setSelectedPriceBand(value);
   };
@@ -198,6 +210,76 @@ const CompaniesPage = () => {
               onSave={handleSaveCompany}
             />
           )}
+
+          {selectedCompanyFresh && (
+            <div className="mt-8 bg-white rounded-[13px] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-x-3">
+                  <Icons.User fill="#242424" size="24px" />
+                  <p className="font-semibold">
+                    Users at {selectedCompanyFresh.name}{" "}
+                    <span className="font-normal text-gray-500">({selectedContacts.length})</span>
+                  </p>
+                </div>
+                <Link
+                  href={{ pathname: "/users", query: { new: 1, company: selectedCompanyFresh.guid } }}
+                  className="text-sm font-medium text-[#6D20C7] hover:underline"
+                >
+                  + Add user
+                </Link>
+              </div>
+
+              {selectedContacts.length === 0 ? (
+                <p className="text-sm text-gray-500">No users are linked to this company yet.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-b-[#BEBEBE] text-left">
+                      <th className="p-2">Name</th>
+                      <th className="p-2">Email</th>
+                      <th className="p-2">Type</th>
+                      <th className="p-2">Phone</th>
+                      <th className="p-2">Status</th>
+                      <th className="p-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedContacts.map((contact) => (
+                      <tr key={contact.guid} className="border-b border-b-[#EAEAEA]">
+                        <td className="p-2">
+                          {contact.name}
+                          {Number(contact.is_primary_contact) ? (
+                            <span className="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-[11px] text-purple-800">Primary</span>
+                          ) : null}
+                        </td>
+                        <td className="p-2">{contact.email}</td>
+                        <td className="p-2">{contact.type}</td>
+                        <td className="p-2">{contact.mobile || contact.phone || "—"}</td>
+                        <td className="p-2">
+                          <span
+                            className={clsx(
+                              "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                              Number(contact.active) ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-600"
+                            )}
+                          >
+                            {Number(contact.active) ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="p-2 text-right">
+                          <Link
+                            href={{ pathname: "/users", query: { contact: contact.guid } }}
+                            className="text-[#6D20C7] hover:underline"
+                          >
+                            Manage
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </div>
 
         {chunkedCompanies.length > 0 && (
@@ -212,6 +294,9 @@ const CompaniesPage = () => {
                   </td>
                   <td className="p-2">
                     <b>Address</b>
+                  </td>
+                  <td className="p-2">
+                    <b>Users</b>
                   </td>
                   <td className="p-2" colSpan={3}>
                     <b>Website</b>
@@ -250,6 +335,20 @@ const CompaniesPage = () => {
                         ]
                           .filter((item) => !!item?.trim())
                           .join(", ")}
+                      </td>
+                      <td className="p-2 text-sm whitespace-nowrap">
+                        {company.contacts?.length ? (
+                          <span>
+                            {company.contacts.length}
+                            {company.contacts.some((c) => Number(c.active)) && (
+                              <span className="ml-1 text-green-700">
+                                ({company.contacts.filter((c) => Number(c.active)).length} active)
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
                       </td>
                       <td className="min-w-[400px] p-2">
                         <div className="flex pr-8 justify-between items-center">

@@ -37,6 +37,8 @@ type Props = {
     }
   ) => Promise<void>;
   onCancelAction: () => void;
+  /** Pre-select this company when creating a user (e.g. from the Companies screen). */
+  defaultCompanyGUID?: string;
 };
 
 const IS_PRIMARY_OPTIONS = [
@@ -61,12 +63,13 @@ const UserForm = ({
   onToggleActivationStatus,
   onCreate,
   onCancelAction,
+  defaultCompanyGUID,
 }: Props) => {
   const [selectedIsPrimary, setSelectedIsPrimary] = useState(
     selectedContact?.is_primary_contact || 0
   );
   const [selectedType, setSelectedType] = useState(selectedContact?.type || "JOB");
-  const [selectedCompanyGUID, setSelectedCompanyGUID] = useState("");
+  const [selectedCompanyGUID, setSelectedCompanyGUID] = useState(defaultCompanyGUID || "");
 
   const isEditingContact = !!selectedContact;
 
