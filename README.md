@@ -118,7 +118,15 @@ Repository secrets:
 Staging hosts (custom domains on the Workers):
 `insurance-staging.broadlanddigital.co.uk`, `insurance-admin-staging.broadlanddigital.co.uk`.
 
-## Data migration (cutover)
+## Data migration
+
+**Dev / no server access — from the old API (GitHub Actions):**
+add repo secrets `LEGACY_ADMIN_EMAIL` / `LEGACY_ADMIN_PASSWORD` (an active ADMIN on the old system), then
+Actions → *Import legacy data (from old API)* → Run workflow. Unticked = dry run (rolled back, prints counts);
+tick **apply** to keep. Loads price bands, suppliers, categories, products, company bands, extra contacts,
+job budgets and orders (`scripts/migrate/legacy_api_import.py`). Passwords and baskets aren't exposed by the API.
+
+**Full cutover — from a MySQL dump:**
 ```bash
 mysqldump --single-transaction -h <host> -u <user> -p <db> > legacy.sql
 python3 scripts/migrate/mysql_to_supabase.py legacy.sql > import.sql

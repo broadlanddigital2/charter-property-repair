@@ -1,0 +1,44 @@
+name: Import legacy data (from old API)
+
+# One-off: pulls the catalogue, price bands, job budgets and orders from the
+# legacy Laravel API and loads them into Supabase.
+# Run from Actions -> "Import legacy data" -> Run workflow.
+# Leave "apply" unticked first: it loads everything in a transaction, prints
+# the counts and rolls back. Tick it to keep the data.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Keep the data (unticked = dry run, rolled back)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: import-legacy
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      LEGACY_API_URL: https://insurance-api.broadlanddigital.co.uk
+      LEGACY_ADMIN_EMAIL: ${{ secrets.LEGACY_ADMIN_EMAIL }}
+      LEGACY_ADMIN_PASSWORD: ${{ secrets.LEGACY_ADMIN_PASSWORD }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check secrets
+        run: |
+          for v in LEGACY_ADMIN_EMAIL LEGACY_ADMIN_PASSWORD SUPABASE_DB_URL; do
+            [ -n "${!v}" ] || { echo "::error::Repository secret $v is not set"; exit 1; }
+          done
+      - name: Export from legacy API
+        run: |
+          python3 scripts/migrate/legacy_api_import.py ${{ inputs.apply && ' ' || '--dry-run' }} > "$RUNNER_TEMP/import.sql"
+          echo "SQL size: $(du -h "$RUNNER_TEMP/import.sql" | cut -f1)"
+      - name: Load into Supabase (${{ inputs.apply && 'APPLY' || 'dry run' }})
+        run: psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q -f "$RUNNER_TEMP/import.sql"
+      - name: Clean up
+        if: always()
+        run: rm -f "$RUNNER_TEMP/import.sql"
