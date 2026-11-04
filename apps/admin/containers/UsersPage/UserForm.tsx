@@ -22,7 +22,7 @@ type Props = {
     data: TUserFormData & {
       userData: Pick<TCompanyContact, "is_primary_contact" | "type">;
     } & {
-      userData: { contact_guid: string };
+      userData: { contact_guid: string; company_guid?: string };
     }
   ) => Promise<void>;
   onToggleActivationStatus?: (userGUID: string) => Promise<void>;
@@ -47,9 +47,8 @@ const IS_PRIMARY_OPTIONS = [
 ];
 
 const USER_TYPES = [
-  // { label: "Admin", value: "ADMIN" },
-  // { label: "Billing", value: "BILLING" },
   { label: "Job", value: "JOB" },
+  { label: "Billing", value: "BILLING" },
 ];
 
 const UserForm = ({
@@ -69,12 +68,14 @@ const UserForm = ({
     selectedContact?.is_primary_contact || 0
   );
   const [selectedType, setSelectedType] = useState(selectedContact?.type || "JOB");
-  const [selectedCompanyGUID, setSelectedCompanyGUID] = useState(defaultCompanyGUID || "");
+  const [selectedCompanyGUID, setSelectedCompanyGUID] = useState(
+    selectedContact?.company_guid || defaultCompanyGUID || ""
+  );
 
   const isEditingContact = !!selectedContact;
 
   const COMPANY_GUID_OPTIONS = useMemo(() => {
-    return companies?.length > 0 && !isEditingContact
+    return companies?.length > 0
       ? companies
           .map((company) => ({
             label: company.name,
@@ -83,6 +84,14 @@ const UserForm = ({
           .sort((a, b) => a.label.localeCompare(b.label))
       : [];
   }, [companies]);
+
+  const company = companies.find((c) => c.guid === selectedCompanyGUID);
+  const companyAddress = company
+    ? [company.address_street || company.address, company.address_city, company.address_postcode]
+        .filter(Boolean)
+        .join(", ")
+        .replace(/\s*\n\s*/g, ", ")
+    : "";
 
   const submit = (data: TUserFormData, event: any) => {
     const buttonClicked = event.nativeEvent.submitter.value as
@@ -96,6 +105,9 @@ const UserForm = ({
           userData: {
             ...data.userData,
             contact_guid: selectedContact.guid,
+            ...(selectedCompanyGUID && selectedCompanyGUID !== selectedContact.company_guid
+              ? { company_guid: selectedCompanyGUID }
+              : {}),
             is_primary_contact: selectedIsPrimary,
             type: selectedType,
           },
@@ -123,17 +135,54 @@ const UserForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)}>
+    <form onSubmit={handleSubmit(submit)} className="mt-4">
+      {isEditingContact && (
+        <div className="border rounded-3 bg-body-tertiary p-3 mb-4">
+          <div className="d-flex flex-wrap align-items-center gap-2">
+            <span className="fs-5 fw-semibold">{selectedContact.name || "No name"}</span>
+            <span className={`badge ${Number(selectedContact.active) ? "text-bg-success" : "text-bg-secondary"}`}>
+              {Number(selectedContact.active) ? "Active login" : "No active login"}
+            </span>
+            <span className="badge text-bg-light">{selectedContact.type}</span>
+            {Number(selectedContact.is_primary_contact) ? (
+              <span className="badge text-bg-info">Primary contact</span>
+            ) : null}
+          </div>
+          <div className="row g-3 mt-1 small">
+            <div className="col-sm-6 col-lg-4">
+              <div className="text-body-secondary">Business</div>
+              <div className="fw-semibold">{company?.name || selectedContact.company_name || "—"}</div>
+              {companyAddress && <div className="text-body-secondary">{companyAddress}</div>}
+            </div>
+            <div className="col-sm-6 col-lg-4">
+              <div className="text-body-secondary">Budget grade</div>
+              <div className="fw-semibold">
+                {company?.price_bands ? `Grade ${company.price_bands.band}` : "Not set"}
+              </div>
+              <div className="text-body-secondary">
+                {company?.is_individual ? "Individual" : "Business"}
+                {company ? ` · ${Number(company.active) ? "active" : "inactive"} customer` : ""}
+              </div>
+            </div>
+            <div className="col-sm-6 col-lg-4">
+              <div className="text-body-secondary">Contact</div>
+              <div>{selectedContact.email || "—"}</div>
+              <div>{[selectedContact.mobile, selectedContact.phone].filter(Boolean).join(" · ") || "—"}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-[640px] grid grid-cols-2 gap-x-6">
-        {!isEditingContact && (
+        <div className="col-span-2">
           <Dropdown
-            label="Contact's Company"
+            label={isEditingContact ? "Company (change to move this user)" : "Contact's Company"}
             options={COMPANY_GUID_OPTIONS}
             onSelect={(value) => setSelectedCompanyGUID(value as string)}
             placeholder="Select Contact's Company"
             selectedOption={selectedCompanyGUID}
           />
-        )}
+        </div>
         <Input
           id="userData.name"
           label="Full Name"
@@ -150,7 +199,7 @@ const UserForm = ({
           errors={errors}
         />
         <Input
-          type="number"
+          type="tel"
           id="userData.phone"
           label="Phone"
           register={register}
@@ -158,7 +207,7 @@ const UserForm = ({
           errors={errors}
         />
         <Input
-          type="number"
+          type="tel"
           id="userData.mobile"
           label="Mobile"
           register={register}
@@ -185,7 +234,11 @@ const UserForm = ({
         />
         <Dropdown
           label="Type"
-          options={USER_TYPES}
+          options={
+            selectedContact?.type && !USER_TYPES.some((t) => t.value === selectedContact.type)
+              ? [...USER_TYPES, { label: selectedContact.type, value: selectedContact.type }]
+              : USER_TYPES
+          }
           onSelect={(value) => setSelectedType(value as string)}
           placeholder="Select type"
           selectedOption={selectedType}

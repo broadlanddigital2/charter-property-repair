@@ -41,6 +41,7 @@ export type TCompanyContact = {
   phone: string;
   type: string;
   company_name?: string; // added client-side for search results
+  company_guid?: string; // added client-side
 };
 
 export type TCompany = {

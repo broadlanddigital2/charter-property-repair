@@ -95,7 +95,7 @@ const UsersPage = () => {
 
     filteredCompaniesWithContacts.forEach((company) => {
       company.contacts.forEach((contact) => {
-        filteredCompaniesContacts.push({ ...contact, company_name: company.name });
+        filteredCompaniesContacts.push({ ...contact, company_name: company.name, company_guid: company.guid });
       });
     });
 
@@ -146,7 +146,8 @@ const UsersPage = () => {
     const foundUsers = companiesContacts.filter(
       (contact) =>
         contact?.email?.toLowerCase()?.includes(searchValueLowerCase) ||
-        contact?.name?.toLowerCase()?.includes(searchValueLowerCase)
+        contact?.name?.toLowerCase()?.includes(searchValueLowerCase) ||
+        contact?.company_name?.toLowerCase()?.includes(searchValueLowerCase)
     );
 
     const contactsChunks = chunkArray(foundUsers, 10);
@@ -181,13 +182,24 @@ const UsersPage = () => {
     data: TUserFormData & {
       userData: Pick<TCompanyContact, "is_primary_contact" | "type">;
     } & {
-      userData: { contact_guid: string };
+      userData: { contact_guid: string; company_guid?: string };
     }
   ) => {
     try {
       loaderStore.setLoading(true);
       await updateCompanyContact(data.userData);
       await handleGetCompaniesAndContacts();
+      const company = companies.find((c) => c.guid === (data.userData.company_guid ?? selectedContact?.company_guid));
+      setSelectedContact((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...(data.userData as Partial<TCompanyContact>),
+              company_guid: company?.guid ?? prev.company_guid,
+              company_name: company?.name ?? prev.company_name,
+            }
+          : prev
+      );
       setIsSavedSuccessfully(true);
       toast.success("Successfully updated");
     } catch (error) {
@@ -211,7 +223,9 @@ const UsersPage = () => {
         });
         await handleGetCompaniesAndContacts();
 
-        setSelectedContact(contact);
+        setSelectedContact((prev) =>
+          prev ? { ...prev, ...contact, company_guid: prev.company_guid, company_name: prev.company_name } : contact
+        );
 
         toast.success("Account was deactivated successfully");
       } else {
@@ -348,7 +362,7 @@ const UsersPage = () => {
           <div className="relative flex items-center max-w-[350px] ml-auto">
             <input
               className="form-control ps-5"
-              placeholder="Search by name and email"
+              placeholder="Filter by name, email or company"
               value={searchFilterValue}
               onChange={(e) => handleSearchWithFilter(e.target.value)}
             />
@@ -368,6 +382,9 @@ const UsersPage = () => {
                   <tr className="table-light">
                     <td className="p-2">
                       <b>Full Name</b>
+                    </td>
+                    <td className="p-2">
+                      <b>Company</b>
                     </td>
                     <td className="p-2">
                       <b>Email</b>
@@ -391,11 +408,15 @@ const UsersPage = () => {
                   {chunkedContacts[currentPage - 1]?.map((contact, index) => {
                     return (
                       <tr
-                        key={contact.id}
-                        
+                        key={contact.guid}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => handleSelectUser(contact)}
                       >
-                        <td className="p-2 w-[400px]">
-                          <p>{contact.name}</p>
+                        <td className="p-2">
+                          <p className="fw-semibold">{contact.name}</p>
+                        </td>
+                        <td className="p-2 small">
+                          <p>{contact.company_name}</p>
                         </td>
 
                         <td className="p-2 w-[400px]">
@@ -418,7 +439,7 @@ const UsersPage = () => {
                               {Number(contact.active) ? "Active" : "Inactive"}
                             </span>
 
-                            <Button size="sm" onClick={() => handleSelectUser(contact)}>
+                            <Button size="sm" type="button" onClick={() => handleSelectUser(contact)}>
                               View
                             </Button>
                           </div>
