@@ -1,0 +1,12 @@
+name: Probe legacy company links
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      LEGACY_API_URL: https://insurance-api.broadlanddigital.co.uk
+      LEGACY_ADMIN_EMAIL: ${{ secrets.LEGACY_ADMIN_EMAIL }}
+      LEGACY_ADMIN_PASSWORD: ${{ secrets.LEGACY_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/probe/legacy_company_links.py
