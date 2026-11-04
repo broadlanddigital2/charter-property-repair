@@ -9,6 +9,7 @@ import Input from "@/components/Input";
 import Button from "@/components/Button";
 import { TUserFormData } from "./UsersPage";
 import { Dropdown } from "@/components/Dropdown";
+import SearchSelect from "@/components/SearchSelect";
 import { TCompany, TCompanyContact } from "@/types/api";
 
 type Props = {
@@ -78,8 +79,12 @@ const UserForm = ({
     return companies?.length > 0
       ? companies
           .map((company) => ({
-            label: company.name,
+            label: company.name || "(no name)",
             value: company.guid,
+            hint:
+              [company.address_postcode, (company.address_street || company.address || "").split("\n")[0]]
+                .filter(Boolean)
+                .join(" · ") || undefined,
           }))
           .sort((a, b) => a.label.localeCompare(b.label))
       : [];
@@ -175,12 +180,12 @@ const UserForm = ({
 
       <div className="max-w-[640px] grid grid-cols-2 gap-x-6">
         <div className="col-span-2">
-          <Dropdown
+          <SearchSelect
             label={isEditingContact ? "Company (change to move this user)" : "Contact's Company"}
             options={COMPANY_GUID_OPTIONS}
-            onSelect={(value) => setSelectedCompanyGUID(value as string)}
-            placeholder="Select Contact's Company"
-            selectedOption={selectedCompanyGUID}
+            value={selectedCompanyGUID}
+            onChange={setSelectedCompanyGUID}
+            placeholder="Search companies by name or postcode"
           />
         </div>
         <Input
