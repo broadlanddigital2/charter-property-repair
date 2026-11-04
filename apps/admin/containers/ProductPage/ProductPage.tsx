@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import {
   getCategories,
   getPriceBands,
-  getProducts,
+  getProductsPage,
   getSuppliers,
   removeProduct,
   updateProduct,
@@ -27,7 +27,6 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Icons } from "@/components/Icons";
 import ProductForm from "./ProductForm";
 import SearchBar from "@/components/SearchBar";
-import { chunkArray } from "@/utils/common";
 import Pagination from "@/components/Pagination";
 import withAuth from "@/hoc/withAuth";
 
@@ -39,6 +38,7 @@ const Products = () => {
   const [selectedManufacturerGUID, setSelectedManufacturerGUID] =
     useState<string>("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [categories, setCategories] = useState<TCategory[]>([]);
   const [suppliers, setSuppliers] = useState<TSupplier[]>([]);
   const [priceBands, setPriceBands] = useState<TPriceBandsCategory[]>([]);
@@ -53,27 +53,23 @@ const Products = () => {
   const [selectedProduct, setSelectedProduct] =
     useState<Nullable<Product>>(null);
 
-  const chunkedProducts = chunkArray(products, 10);
-
-  const totalPages = products.length > 0 ? Math.ceil(products.length / 10) : 0;
+  const PER_PAGE = 10;
+  const totalPages = Math.ceil(totalProducts / PER_PAGE);
 
   useEffect(() => {
     (async () => {
       try {
         loaderStore.setLoading(true);
         const [
-          { products },
           { categories },
           { suppliers },
           { price_bands: priceBandCategories },
         ] = await Promise.all([
-          getProducts(),
           getCategories(),
           getSuppliers(),
           getPriceBands(),
         ]);
 
-        setProducts(products);
         setCategories(categories);
         setSuppliers(suppliers);
         setPriceBands(priceBandCategories);
@@ -85,10 +81,26 @@ const Products = () => {
     })();
   }, []);
 
-  const handleGetProducts = async () => {
-    const { products } = await getProducts();
+  // the catalogue is large (30k+), so the list is loaded a page at a time
+  const handleGetProducts = async (page = currentPage) => {
+    const { products, total } = await getProductsPage({ page, perPage: PER_PAGE });
     setProducts(products);
+    setTotalProducts(total);
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        loaderStore.setLoading(true);
+        await handleGetProducts(currentPage);
+      } catch (error) {
+        errorLogger(error, "Failed to load products");
+      } finally {
+        loaderStore.setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -113,7 +125,14 @@ const Products = () => {
   };
 
   const handleSelectProduct = (product: Product) => {
-    const productOptions = JSON.parse(product.miscellaneous);
+    // miscellaneous is stored as JSON (object); older data may be a JSON string
+    const raw = product.miscellaneous as unknown;
+    let productOptions: Record<string, any> = {};
+    try {
+      productOptions = (typeof raw === "string" ? JSON.parse(raw) : raw) || {};
+    } catch {
+      productOptions = {};
+    }
     const miscellaneousData = Object.entries(productOptions).reduce(
       (finalData, currentData) => {
         return { ...finalData, [currentData[0]]: currentData[1] };
@@ -143,20 +162,17 @@ const Products = () => {
     }
   };
 
-  const handleSearch = (value: string) => {
+  const handleSearch = async (value: string) => {
     if (value === "") {
       setSearchResults([]);
       return;
     }
-
-    const searchValueLowerCase = value.toLowerCase();
-    const foundProducts = products.filter(
-      (product) =>
-        product?.sku?.includes(searchValueLowerCase) ||
-        product?.name?.toLowerCase()?.includes(searchValueLowerCase)
-    );
-
-    setSearchResults(foundProducts);
+    try {
+      const { products: found } = await getProductsPage({ search: value, page: 1, perPage: 25 });
+      setSearchResults(found);
+    } catch (error) {
+      errorLogger(error, "Search failed");
+    }
   };
 
   const handleSelectPriceBand = (value: string) => {
@@ -323,7 +339,7 @@ const Products = () => {
           </thead>
 
           <tbody>
-            {chunkedProducts[currentPage - 1]?.map((product, index) => (
+            {products.map((product, index) => (
               <tr
                 key={product.sku}
                 

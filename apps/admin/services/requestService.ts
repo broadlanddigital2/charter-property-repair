@@ -269,6 +269,14 @@ export const updateProduct = async (
 ) => {
   const patch: Record<string, unknown> = normaliseBools(pick(productData as Record<string, unknown>, PRODUCT_COLUMNS));
   if (patch.price === "") patch.price = null;
+  // the form sends miscellaneous as a JSON string (legacy API shape); store it as JSON
+  if (typeof patch.miscellaneous === "string") {
+    try {
+      patch.miscellaneous = JSON.parse(patch.miscellaneous as string);
+    } catch {
+      patch.miscellaneous = { raw: patch.miscellaneous };
+    }
+  }
   if (productData.supplier_guid) patch.supplier_id = productData.supplier_guid;
   if (productData.category_guid) patch.category_id = productData.category_guid;
   if ("price_band_guid" in productData) patch.price_band_id = productData.price_band_guid || null;
@@ -332,4 +340,20 @@ export const getDashboardStats = async () => {
     syncRuns: (unwrap(runs) ?? []) as TSyncRun[],
     recentOrders: (unwrap(recentOrders) ?? []) as unknown as TRecentOrder[],
   };
+};
+
+/** One page of products (optionally filtered by name/SKU), for the Products screen. */
+export const getProductsPage = async ({
+  search,
+  page = 1,
+  perPage = 10,
+}: {
+  search?: string;
+  page?: number;
+  perPage?: number;
+}) => {
+  const res = unwrap(
+    await supabase.rpc("api_products_page", { p_search: search || null, p_page: page, p_per_page: perPage })
+  ) as { total: number; data: Product[] };
+  return { products: res.data, total: res.total };
 };
