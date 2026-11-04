@@ -1,0 +1,58 @@
+name: Refresh Eastbrooke images
+
+# Looks up each Eastbrooke product (still on an old eastbrooktrade.com image URL)
+# on Eastbrooke's current site by SKU and stores its current main image.
+# Re-runnable: products already updated are skipped.
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Only process this many products (blank = all)"
+        required: false
+        default: "25"
+      apply:
+        description: "Save the new image URLs (unticked = report only)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: refresh-eastbrooke-images
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: List products to refresh
+        run: |
+          psql "$SUPABASE_DB_URL" -At -F $'\t' -c \
+            "select id, sku from public.products where image ilike '%eastbrooktrade.com%' order by sku" > "$RUNNER_TEMP/products.tsv"
+          echo "Products still on old Eastbrooke URLs: $(wc -l < "$RUNNER_TEMP/products.tsv")"
+      - name: Look up current images
+        run: |
+          LIMIT="${{ inputs.limit }}"
+          python3 scripts/images/refresh_eastbrooke_images.py "$RUNNER_TEMP/products.tsv" "$RUNNER_TEMP/results.tsv" ${LIMIT:+--limit "$LIMIT"}
+          echo "Verified matches: $(wc -l < "$RUNNER_TEMP/results.tsv")"
+      - name: Save new image URLs
+        if: inputs.apply
+        run: |
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<SQL
+          begin;
+          create temp table _img (id uuid, sku text, image text, page text);
+          \copy _img from '$RUNNER_TEMP/results.tsv' with (format text)
+          update public.products p
+             set image = i.image,
+                 miscellaneous = coalesce(p.miscellaneous, '{}'::jsonb)
+                   || jsonb_build_object('legacyImage', p.image, 'productPage', i.page)
+            from _img i
+           where p.id = i.id and p.image ilike '%eastbrooktrade.com%';
+          select count(*) as updated from _img;
+          commit;
+          SQL
+      - name: Clean up
+        if: always()
+        run: rm -f "$RUNNER_TEMP/products.tsv" "$RUNNER_TEMP/results.tsv"
