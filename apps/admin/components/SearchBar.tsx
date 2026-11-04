@@ -1,4 +1,4 @@
-import { ChangeEvent, ReactNode, useState, useEffect } from "react";
+import { ChangeEvent, KeyboardEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { CFormInput, CInputGroup, CInputGroupText } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
 import { cilSearch } from "@coreui/icons";
@@ -26,27 +26,51 @@ const SearchBar = ({
   renderItem,
 }: Props) => {
   const [searchValue, setSearchValue] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // close the results when clicking/tapping anywhere outside the search box
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
 
   const debouncedQuantity = useDebounce(searchValue, 400);
 
   useEffect(() => {
-    onSearch(debouncedQuantity);
+    onSearch(debouncedQuantity.trim());
   }, [debouncedQuantity]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(e.target.value.trim());
+    // keep spaces while typing so multi-word searches work; trimmed when searching
+    setSearchValue(e.target.value);
+    setOpen(true);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") setOpen(false);
   };
 
   return (
-    <div className="position-relative" style={{ width: "100%", maxWidth: 420 }}>
+    <div ref={wrapperRef} className="position-relative" style={{ width: "100%", maxWidth: 420 }}>
       <CInputGroup>
         <CInputGroupText className="bg-body">
           <CIcon icon={cilSearch} />
         </CInputGroupText>
-        <CFormInput placeholder={placeholder} value={searchValue} onChange={handleChange} />
+        <CFormInput
+          placeholder={placeholder}
+          value={searchValue}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setOpen(true)}
+        />
       </CInputGroup>
 
-      {searchResults.length > 0 && (
+      {open && searchResults.length > 0 && (
         <div
           className="list-group position-absolute w-100 shadow mt-1"
           style={{ zIndex: 1050, maxHeight: 360, overflowY: "auto", minWidth: 380 }}
@@ -59,6 +83,7 @@ const SearchBar = ({
               onClick={() => {
                 onItemClick(item);
                 setSearchValue("");
+                setOpen(false);
               }}
             >
               {renderItem ? renderItem(item) : renderSearchResults(searchKeys, item, item[placeholderKey])}
