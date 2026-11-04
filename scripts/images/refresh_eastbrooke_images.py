@@ -82,10 +82,6 @@ def lookup(sku: str, name: str):
             return None, None, err
         path = urllib.parse.urlparse(final).path
 
-    # Eastbrooke appends the SKU digits to the product URL (41.1019 -> ...-411019)
-    if not ((digits and path.endswith(digits)) or sku in body):
-        return None, final, "page does not mention SKU"
-
     # strict check: the page must be the same product, not just mention the SKU.
     # The first word of our name is the range (Madrid, Bonito, Stour...) and must
     # appear in the page title/URL, and most of the other words must too.
@@ -94,8 +90,13 @@ def lookup(sku: str, name: str):
     theirs = tokens(title + " " + path.replace("-", " ").replace("/", " "))
     ours = tokens(name)
     first = next(iter(re.findall(r"[a-z]{3,}", name.lower())), None)
-    if not ours or (first and first not in theirs) or len(ours & theirs) / len(ours) < 0.6:
+    score = len(ours & theirs) / len(ours) if ours else 0
+    if not ours or (first and first not in theirs) or score < 0.6:
         return None, final, "name mismatch"
+    # Eastbrooke appends the SKU digits to the product URL (41.1019 -> ...-411019).
+    # Require the SKU on the page unless the name matches almost exactly.
+    if not ((digits and path.endswith(digits)) or sku in body or score >= 0.85):
+        return None, final, "page does not mention SKU"
 
     m = OG.search(body) or OG2.search(body)
     if not m:
