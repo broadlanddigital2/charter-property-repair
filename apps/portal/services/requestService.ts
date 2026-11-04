@@ -26,9 +26,7 @@ import {
 import { apiError, invoke, requireSession, supabase, unwrap } from "./supabase";
 
 // rows from plain table selects: add legacy `guid`
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const g = <T,>(row: any): T => (row ? { ...row, guid: row.id } : row);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const gs = <T,>(rows: any[] | null): T[] => (rows ?? []).map((r) => g<T>(r));
 
 export const login = async (credentials: TLoginCredentials): Promise<TLoginRes> => {
@@ -121,7 +119,6 @@ export const getCategorySuppliers = async (categoryGUID: string) => {
   const rows = unwrap(
     await supabase.from("suppliers").select("*, products!inner(category_id)").eq("products.category_id", categoryGUID)
   );
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const suppliers = gs<TSupplier>(rows).map(({ products, ...s }: TSupplier & { products?: unknown }) => s as TSupplier);
   return { status: "OK", suppliers };
 };
@@ -249,7 +246,6 @@ export const getOrderData = async (guid: string) => {
   return { order, status: "OK" };
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const createOrder = async (jobGUID: string, _productGUIDs: string[]) => {
   const res = await invoke<{ status: string; order: TOrder & { id: string } }>("place-order", { job_guid: jobGUID });
   return { status: res.status, order: { ...res.order, guid: res.order.id } as TOrder };

@@ -19,7 +19,6 @@ const Button = ({ children, variant, size, className, type, ...props }: TButtonP
       size={size}
       type={type ?? "submit"}
       className={clsx("px-4", className)}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {...(props as any)}
     >
       {children}

@@ -51,7 +51,6 @@ const Input = <T extends FieldValues>({
           invalid={!!error?.message}
           className={otherClasses}
           {...register?.(id, { required })}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           {...(otherProps as any)}
         />
         {type === "password" && (

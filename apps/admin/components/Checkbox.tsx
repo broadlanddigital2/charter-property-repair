@@ -16,7 +16,6 @@ const Checkbox = ({ label, name, checked, onChange, ...rest }: CheckboxProps) =>
       label={label}
       checked={checked}
       onChange={onChange}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {...(rest as any)}
     />
   );

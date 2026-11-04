@@ -20,9 +20,7 @@ import {
 import { TUserFormData } from "@/containers/UsersPage/UsersPage";
 import { apiError, invoke, requireSession, supabase, unwrap } from "./supabase";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const g = <T,>(row: any): T => (row ? { ...row, guid: row.id } : row);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const gs = <T,>(rows: any[] | null): T[] => (rows ?? []).map((r) => g<T>(r));
 
 /** Keep only writable columns so form extras (guid, relations…) don't break the update. */
