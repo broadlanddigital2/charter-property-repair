@@ -147,9 +147,9 @@ const ProductForm = ({
       </div>
 
       <div>
-        <p className="ml-2 font-semibold">Price band</p>
+        <p className="fw-semibold small mb-1 d-block">Price band</p>
 
-        <div className="flex gap-x-12 bg-white p-4 mt-2 rounded-[13px]">
+        <div className="flex gap-x-12 p-3 mt-2 rounded border bg-body-tertiary">
           {priceBands?.length > 0 && priceBands.map((priceBand) => (
             <Checkbox
               key={priceBand.guid}
@@ -166,9 +166,9 @@ const ProductForm = ({
       </div>
 
       <div className="mt-6">
-        <p className="ml-2 font-semibold">Surface type</p>
+        <p className="fw-semibold small mb-1 d-block">Surface type</p>
 
-        <div className="flex gap-x-12 bg-white p-4 mt-2 rounded-[13px]">
+        <div className="flex gap-x-12 p-3 mt-2 rounded border bg-body-tertiary">
           {surfaces.map((surface) => (
             <Checkbox
               key={surface}
@@ -203,7 +203,7 @@ const ProductForm = ({
       </div>
 
       <div className="mt-7">
-        <label htmlFor="image" className="ml-2 font-semibold">
+        <label htmlFor="image" className="fw-semibold small mb-1 d-block">
           Product image
         </label>
 
@@ -212,7 +212,7 @@ const ProductForm = ({
           id="image"
           accept="image/*"
           onChange={onImageChange}
-          className="block mt-3"
+          className="form-control mt-1"
         />
 
         {imagePreview && (

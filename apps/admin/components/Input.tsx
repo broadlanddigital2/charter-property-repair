@@ -1,13 +1,9 @@
 import clsx from "clsx";
 import { HTMLInputTypeAttribute, InputHTMLAttributes, useState } from "react";
-import {
-  UseFormRegister,
-  FieldValues,
-  Path,
-  FieldErrors,
-} from "react-hook-form";
-
-import { Icon } from "./Icon";
+import { UseFormRegister, FieldValues, Path, FieldErrors } from "react-hook-form";
+import { CButton, CFormInput, CFormLabel, CInputGroup } from "@coreui/react";
+import CIcon from "@coreui/icons-react";
+import { cilLockLocked, cilLockUnlocked } from "@coreui/icons";
 
 const getNestedProp = (obj: Record<string, any> | undefined, path: string) => {
   return path.split(".").reduce((obj, key) => obj?.[key], obj);
@@ -40,42 +36,38 @@ const Input = <T extends FieldValues>({
   const error = getNestedProp(errors, id);
   const [typeState, setTypeState] = useState(type);
 
-  const eyeClickHandler = () => {
-    setTypeState(typeState === "password" ? "text" : "password");
-  };
-
   return (
-    <div className={clsx(!withoutTopMargin && 'mt-6')}>
-      {label && <label htmlFor={id} className="ml-2 font-semibold">{label}</label>}
+    <div className={clsx(!withoutTopMargin && "mt-3")}>
+      {label && (
+        <CFormLabel htmlFor={id} className="fw-semibold small mb-1">
+          {label}
+        </CFormLabel>
+      )}
 
-      <div className="relative">
-        <input
+      <CInputGroup>
+        <CFormInput
           id={id}
           type={typeState}
-          className={clsx(
-            "block bg-white p-4 w-full rounded-[13px] placeholder:text-gray-600 text-black mt-2",
-            { "outline outline-[#d31919]": error?.message },
-            otherClasses
-          )}
+          invalid={!!error?.message}
+          className={otherClasses}
           {...register?.(id, { required })}
-          {...otherProps}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          {...(otherProps as any)}
         />
-
         {type === "password" && (
-          <Icon
-            onClick={eyeClickHandler}
-            className="absolute top-[20px] right-[16px] cursor-pointer"
-            src="/icons/Hide.svg"
-            alt="hide icon"
-          />
+          <CButton
+            type="button"
+            color="secondary"
+            variant="outline"
+            onClick={() => setTypeState(typeState === "password" ? "text" : "password")}
+            aria-label={typeState === "password" ? "Show password" : "Hide password"}
+          >
+            <CIcon icon={typeState === "password" ? cilLockLocked : cilLockUnlocked} />
+          </CButton>
         )}
+      </CInputGroup>
 
-        {error?.message && (
-          <p className="absolute left-0 top-[calc(100%+5px)] text-[#d31919] text-[12px]">
-            {error.message}
-          </p>
-        )}
-      </div>
+      {error?.message && <div className="invalid-feedback d-block">{String(error.message)}</div>}
     </div>
   );
 };

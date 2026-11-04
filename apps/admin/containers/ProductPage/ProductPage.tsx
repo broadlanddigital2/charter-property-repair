@@ -254,7 +254,7 @@ const Products = () => {
   return (
     <DashboardLayout>
       <>
-        <div className="bg-[#EAEAEA] rounded-[13px] min-h-[250px] py-6 px-8">
+        <div className="card border-0 shadow-sm p-4 mb-4">
           <div className="flex items-center gap-x-8">
             <div className="flex items-center gap-x-3 h-fit">
               <Icons.Product stroke="#242424" size="24px" />
@@ -296,9 +296,9 @@ const Products = () => {
           )}
         </div>
 
-        <table className="w-full mt-12">
+        <table className="table table-hover align-middle mb-0 bg-white shadow-sm rounded overflow-hidden mt-4">
           <thead>
-            <tr className="border-b-[1.5px] border-b-[#BEBEBE]">
+            <tr className="table-light">
               <td></td>
 
               <td className="p-2">
@@ -326,9 +326,7 @@ const Products = () => {
             {chunkedProducts[currentPage - 1]?.map((product, index) => (
               <tr
                 key={product.sku}
-                className={`border-b border-b-[#BEBEBE] ${
-                  index % 2 === 0 ? "bg-[#F2F2F2]" : ""
-                }`}
+                
               >
                 <td
                   className="pl-8 pr-2 py-2 cursor-pointer"
@@ -360,7 +358,7 @@ const Products = () => {
                         : ""}
                     </span>
 
-                    <Button onClick={() => handleSelectProduct(product)}>
+                    <Button size="sm" onClick={() => handleSelectProduct(product)}>
                       View
                     </Button>
                   </div>

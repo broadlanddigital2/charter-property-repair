@@ -177,7 +177,7 @@ const CompaniesPage = () => {
   return (
     <DashboardLayout>
       <div>
-        <div className="bg-[#EAEAEA] rounded-[13px] min-h-[250px] py-6 px-8">
+        <div className="card border-0 shadow-sm p-4 mb-4">
           <div className="flex gap-x-8">
             <div className="flex items-center gap-x-3 h-fit">
               <Icons.Customers fill="#242424" size="32px" />
@@ -212,7 +212,7 @@ const CompaniesPage = () => {
           )}
 
           {selectedCompanyFresh && (
-            <div className="mt-8 bg-white rounded-[13px] p-6">
+            <div className="border rounded p-3 mt-4 bg-body">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-x-3">
                   <Icons.User fill="#242424" size="24px" />
@@ -223,7 +223,7 @@ const CompaniesPage = () => {
                 </div>
                 <Link
                   href={{ pathname: "/users", query: { new: 1, company: selectedCompanyFresh.guid } }}
-                  className="text-sm font-medium text-[#6D20C7] hover:underline"
+                  className="text-sm font-medium text-primary hover:underline"
                 >
                   + Add user
                 </Link>
@@ -268,7 +268,7 @@ const CompaniesPage = () => {
                         <td className="p-2 text-right">
                           <Link
                             href={{ pathname: "/users", query: { contact: contact.guid } }}
-                            className="text-[#6D20C7] hover:underline"
+                            className="text-primary hover:underline"
                           >
                             Manage
                           </Link>
@@ -284,9 +284,9 @@ const CompaniesPage = () => {
 
         {chunkedCompanies.length > 0 && (
           <>
-            <table className="w-full mt-12">
+            <table className="table table-hover align-middle mb-0 bg-white shadow-sm rounded overflow-hidden mt-4">
               <thead>
-                <tr className="border-b-[1.5px] border-b-[#BEBEBE]">
+                <tr className="table-light">
                   <td></td>
 
                   <td className="p-2">
@@ -309,10 +309,7 @@ const CompaniesPage = () => {
                   return (
                     <tr
                       key={company.guid}
-                      className={clsx(
-                        "border-b border-b-[#BEBEBE]",
-                        index % 3 === 0 ? "bg-[#F2F2F2]" : "bg-white"
-                      )}
+                      
                     >
                       <td className="p-2 pl-8">
                         <Icons.Bin
@@ -354,7 +351,7 @@ const CompaniesPage = () => {
                         <div className="flex pr-8 justify-between items-center">
                           <p>{company?.website}</p>
 
-                          <Button onClick={() => handleSelectCompany(company)}>
+                          <Button size="sm" onClick={() => handleSelectCompany(company)}>
                             View
                           </Button>
                         </div>

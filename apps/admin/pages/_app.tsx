@@ -7,6 +7,7 @@ import Loader from "@/components/Loader";
 import { useStores } from "@/hooks/useStores";
 import { setUnauthenticatedHandler } from "@/services/supabase";
 
+import "@coreui/coreui/dist/css/coreui.min.css";
 import "@/styles/globals.css";
 import 'react-toastify/dist/ReactToastify.css';
 

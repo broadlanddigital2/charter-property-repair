@@ -76,7 +76,7 @@ const CategoryForm = ({
       </div>
 
       <div className="mt-7">
-        <label htmlFor="image" className="ml-2 font-semibold">
+        <label htmlFor="image" className="fw-semibold small mb-1 d-block">
           Category image
         </label>
 
@@ -85,7 +85,7 @@ const CategoryForm = ({
           id="image"
           accept="image/*"
           onChange={onImageChange}
-          className="block mt-3"
+          className="form-control mt-1"
         />
 
         {imagePreview && (

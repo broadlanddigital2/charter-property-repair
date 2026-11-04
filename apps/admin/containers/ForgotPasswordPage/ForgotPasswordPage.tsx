@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useForm } from "react-hook-form";
 
 import Input from "@/components/Input";
+import AuthLayout from "@/components/AuthLayout";
 import Button from "@/components/Button";
 import { useStores } from "@/hooks/useStores";
 import { errorLogger } from "@/services/axiosService";
@@ -33,38 +34,17 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <main className="bg-[#3F4B63] min-h-[100dvh]">
-      <section className="h-[100dvh] grid place-items-center">
-        <div>
-          <Link
-            href=".."
-            className="text-white duration-200 hover:text-blue-400"
-          >
-            &larr; Go Back
+    <AuthLayout title="Reset your password" subtitle="We'll email you a link to set a new password.">
+      <form onSubmit={handleSubmit(submit)}>
+        <Input id="email" label="Email" type="email" placeholder="you@company.co.uk" register={register} withoutTopMargin />
+        <Button className="w-100 mt-4">Send reset link</Button>
+        <div className="text-center mt-3">
+          <Link href="/" className="small">
+            &larr; Back to sign in
           </Link>
-          <form
-            onSubmit={handleSubmit(submit)}
-            className="bg-[#EAEAEA] rounded-[13px] mt-3 py-8 px-4 w-[450px]"
-          >
-            <div className="grid place-items-center gap-x-4">
-              <h1 className="text-[18px] font-semibold">Reset Password</h1>
-            </div>
-
-            <Input
-              id="email"
-              label="Email"
-              type="email"
-              placeholder="Email Address"
-              register={register}
-            />
-
-            <div className="flex justify-center mt-6">
-              <Button>Request Changing Password</Button>
-            </div>
-          </form>
         </div>
-      </section>
-    </main>
+      </form>
+    </AuthLayout>
   );
 };
 

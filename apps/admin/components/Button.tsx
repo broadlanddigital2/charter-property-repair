@@ -1,28 +1,29 @@
 import clsx from "clsx";
-import React, { ButtonHTMLAttributes } from "react";
+import { ButtonHTMLAttributes } from "react";
+import { CButton } from "@coreui/react";
 
 type TButtonVariant = "primary" | "secondary" | "error";
 
 type TButtonProps = {
   variant?: TButtonVariant;
+  size?: "sm" | "lg";
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
-const Button = ({ children, variant, ...props }: TButtonProps) => {
-  const BUTTON_VARIANTS = {
-    primary: "text-white bg-[#31B75C] hover:bg-[#3d9d5b]",
-    secondary: "text-white bg-[#9D9D9D] hover:bg-[#807e7e]",
-    error: "text-white bg-[#D70040] hover:bg-[#b8093d]"
-  };
+const COLORS = { primary: "primary", secondary: "secondary", error: "danger" } as const;
 
-  const buttonVariant = BUTTON_VARIANTS[variant || "primary"];
-
+/** CoreUI button. Defaults to type="submit" like a plain <button>, as the forms rely on it. */
+const Button = ({ children, variant, size, className, type, ...props }: TButtonProps) => {
   return (
-    <button
-      className={clsx("py-2 px-6 rounded-[4px] duration-300", buttonVariant)}
-      {...props}
+    <CButton
+      color={COLORS[variant || "primary"]}
+      size={size}
+      type={type ?? "submit"}
+      className={clsx("px-4", className)}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      {...(props as any)}
     >
       {children}
-    </button>
+    </CButton>
   );
 };
 

@@ -1,4 +1,3 @@
-import clsx from "clsx";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { useEffect, useRef, useState } from "react";
@@ -277,7 +276,7 @@ const UsersPage = () => {
   return (
     <DashboardLayout>
       <div>
-        <div className="bg-[#EAEAEA] rounded-[13px] min-h-[250px] py-6 px-8">
+        <div className="card border-0 shadow-sm p-4 mb-4">
           <div className="flex gap-x-8">
             <div className="flex items-center gap-x-3 h-fit">
               <Icons.User fill="#242424" size="32px" />
@@ -348,7 +347,7 @@ const UsersPage = () => {
         <div className="mt-12">
           <div className="relative flex items-center max-w-[350px] ml-auto">
             <input
-              className="h-10 pr-4 pl-12 py-2 w-full border border-gray-400 rounded-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="form-control ps-5"
               placeholder="Search by name and email"
               value={searchFilterValue}
               onChange={(e) => handleSearchWithFilter(e.target.value)}
@@ -364,9 +363,9 @@ const UsersPage = () => {
 
           {chunkedContacts.length > 0 ? (
             <>
-              <table className="w-full mt-4">
+              <table className="table table-hover align-middle mb-0 bg-white shadow-sm rounded overflow-hidden mt-3">
                 <thead>
-                  <tr className="border-b-[1.5px] border-b-[#BEBEBE]">
+                  <tr className="table-light">
                     <td className="p-2">
                       <b>Full Name</b>
                     </td>
@@ -393,10 +392,7 @@ const UsersPage = () => {
                     return (
                       <tr
                         key={contact.id}
-                        className={clsx(
-                          "border-b border-b-[#BEBEBE]",
-                          index % 3 === 0 ? "bg-[#F2F2F2]" : "bg-white"
-                        )}
+                        
                       >
                         <td className="p-2 w-[400px]">
                           <p>{contact.name}</p>
@@ -416,16 +412,13 @@ const UsersPage = () => {
                         </td>
                         <td className="min-w-[300px] p-2">
                           <div className="flex pr-8 justify-between items-center">
-                            <Icon
-                              src={
-                                contact.active
-                                  ? "/icons/check-green-circle.svg"
-                                  : "/icons/cross-red-circle.svg"
-                              }
-                              alt="status icon"
-                            />
+                            <span
+                              className={`badge ${Number(contact.active) ? "text-bg-success" : "text-bg-secondary"}`}
+                            >
+                              {Number(contact.active) ? "Active" : "Inactive"}
+                            </span>
 
-                            <Button onClick={() => handleSelectUser(contact)}>
+                            <Button size="sm" onClick={() => handleSelectUser(contact)}>
                               View
                             </Button>
                           </div>

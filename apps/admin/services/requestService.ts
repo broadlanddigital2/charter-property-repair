@@ -282,3 +282,56 @@ export const getJobs = async () => {
   const rows = unwrap(await supabase.from("jobs").select("*").order("created_at", { ascending: false }));
   return { status: "OK", jobs: gs<TJob>(rows) };
 };
+
+// ---- Dashboard ------------------------------------------------------------
+export type TSyncRun = {
+  id: number;
+  kind: string;
+  started_at: string;
+  finished_at: string | null;
+  ok: boolean | null;
+  stats: Record<string, number> | null;
+  error: string | null;
+};
+
+export type TRecentOrder = {
+  id: string;
+  created_at: string;
+  job: { job_number: string | null; service_mate_uuid: string; company: { name: string } | null } | null;
+  order_lines: { count: number }[];
+};
+
+export const getDashboardStats = async () => {
+  const count = async (q: PromiseLike<{ count: number | null; error: { message: string } | null }>) => {
+    const { count: n, error } = await q;
+    if (error) throw apiError(error.message);
+    return n ?? 0;
+  };
+  const head = { count: "exact" as const, head: true };
+
+  const [companies, contacts, activeContacts, products, orders, openJobs, runs, recentOrders] = await Promise.all([
+    count(supabase.from("companies").select("id", head)),
+    count(supabase.from("contacts").select("id", head).not("company_id", "is", null)),
+    count(supabase.from("contacts").select("id", head).not("company_id", "is", null).eq("active", true)),
+    count(supabase.from("products").select("id", head)),
+    count(supabase.from("orders").select("id", head)),
+    count(supabase.from("jobs").select("id", head).in("status", ["Quote", "Work Order"])),
+    supabase.from("sync_runs").select("*").order("started_at", { ascending: false }).limit(6),
+    supabase
+      .from("orders")
+      .select("id, created_at, job:jobs(job_number, service_mate_uuid, company:companies(name)), order_lines(count)")
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
+
+  return {
+    companies,
+    contacts,
+    activeContacts,
+    products,
+    orders,
+    openJobs,
+    syncRuns: (unwrap(runs) ?? []) as TSyncRun[],
+    recentOrders: (unwrap(recentOrders) ?? []) as unknown as TRecentOrder[],
+  };
+};

@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import { useForm } from "react-hook-form";
 
 import Input from "@/components/Input";
-import { Icon } from "@/components/Icon";
+import AuthLayout from "@/components/AuthLayout";
 import Button from "@/components/Button";
 import { CookiesEnum } from "@/enums/cookies";
 import { TLoginCredentials } from "@/types/api";
@@ -48,44 +48,20 @@ const Login = () => {
   };
 
   return (
-    <main className="bg-[#3F4B63] min-h-[100dvh]">
-      <section className="h-[100dvh] grid place-items-center">
-        <form
-          onSubmit={handleSubmit(submit)}
-          className="bg-[#EAEAEA] rounded-[13px] py-8 px-4 w-[450px]"
-        >
-          <div className="flex justify-center items-center gap-x-3">
-            <Icon src="/icons/login.svg" alt="login icon" size={36} />
-            <h1 className="text-[18px] font-semibold">System Login</h1>
-          </div>
+    <AuthLayout title="Sign in" subtitle="Use your admin account to continue.">
+      <form onSubmit={handleSubmit(submit)}>
+        <Input id="email" label="Email" type="email" placeholder="you@company.co.uk" register={register} withoutTopMargin />
+        <Input id="password" label="Password" type="password" placeholder="Password" register={register} />
 
-          <Input
-            id="email"
-            type="email"
-            placeholder="Email"
-            register={register}
-          />
+        <Button className="w-100 mt-4">Sign in</Button>
 
-          <Input
-            id="password"
-            type="password"
-            placeholder="Password"
-            register={register}
-          />
-
-          <div className="flex justify-between mt-6 pl-3">
-            <Link
-              href="forgot-password"
-              className="text-sm duration-200 hover:text-blue-400"
-            >
-              Forgotten Password
-            </Link>
-
-            <Button>Login</Button>
-          </div>
-        </form>
-      </section>
-    </main>
+        <div className="text-center mt-3">
+          <Link href="/forgot-password" className="small">
+            Forgotten your password?
+          </Link>
+        </div>
+      </form>
+    </AuthLayout>
   );
 };
 

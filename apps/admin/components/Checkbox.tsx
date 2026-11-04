@@ -1,4 +1,5 @@
 import { InputHTMLAttributes } from "react";
+import { CFormCheck } from "@coreui/react";
 
 type CheckboxProps = {
   label: string;
@@ -9,39 +10,15 @@ type CheckboxProps = {
 
 const Checkbox = ({ label, name, checked, onChange, ...rest }: CheckboxProps) => {
   return (
-    <div className="flex items-center space-x-2">
-      <label
-        htmlFor={name}
-        className={`cursor-pointer flex items-center justify-center w-5 h-5 border-2 rounded ${
-          checked ? "bg-green-500 border-green-500" : "border-black"
-        }`}
-      >
-        <input  
-          type="checkbox"
-          className="hidden"
-          id={name}
-          checked={checked}
-          onChange={onChange}
-          {...rest}
-        />
-        {checked && (
-          <svg
-            className="w-6 h-6 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        )}
-      </label>
-      <span>{label}</span>
-    </div>
+    <CFormCheck
+      id={name}
+      name={name}
+      label={label}
+      checked={checked}
+      onChange={onChange}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      {...(rest as any)}
+    />
   );
 };
 

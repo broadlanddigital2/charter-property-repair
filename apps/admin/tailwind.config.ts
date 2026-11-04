@@ -16,6 +16,8 @@ const config: Config = {
       },
     }
   },
+  // CoreUI provides the base styles (reboot); keep Tailwind for utilities only
+  corePlugins: { preflight: false },
   plugins: [],
 };
 export default config;

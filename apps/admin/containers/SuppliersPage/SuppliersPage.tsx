@@ -1,4 +1,3 @@
-import clsx from "clsx";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
@@ -214,7 +213,7 @@ const SuppliersPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="bg-[#EAEAEA] rounded-[13px] min-h-[250px] py-6 px-8">
+      <div className="card border-0 shadow-sm p-4 mb-4">
         <div className="flex gap-x-8">
           <div className="flex items-center gap-x-3 h-fit">
             <Icons.Menu stroke="#242424" size="32px" />
@@ -255,9 +254,9 @@ const SuppliersPage = () => {
 
       {chunkedSuppliers?.length > 0 && (
         <>
-          <table className="w-full mt-12">
+          <table className="table table-hover align-middle mb-0 bg-white shadow-sm rounded overflow-hidden mt-4">
             <thead>
-              <tr className="border-b-[1.5px] border-b-[#BEBEBE]">
+              <tr className="table-light">
                 <td></td>
 
                 <td className="p-2">
@@ -271,10 +270,7 @@ const SuppliersPage = () => {
                 return (
                   <tr
                     key={supplier.guid}
-                    className={clsx(
-                      "border-b border-b-[#BEBEBE]",
-                      index % 3 === 0 ? "bg-[#F2F2F2]" : "bg-white"
-                    )}
+                    
                   >
                     <td className="p-2 pl-8">
                       <Icons.Bin
@@ -287,7 +283,7 @@ const SuppliersPage = () => {
                       <div className="flex pr-8 justify-between items-center">
                         <p>{supplier.name}</p>
 
-                        <Button onClick={() => handleSelectSupplier(supplier)}>
+                        <Button size="sm" onClick={() => handleSelectSupplier(supplier)}>
                           View
                         </Button>
                       </div>

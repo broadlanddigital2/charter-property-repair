@@ -140,12 +140,12 @@ const CompanyForm = ({
     return (
       !isFetchingAddresses &&
       showDropdown && (
-        <div className="absolute z-20 max-h-[300px] overflow-y-auto overflow-x-hidden w-full py-2 mt-2 bg-gray-100 border rounded-[13px] border-gray-700">
+        <div className="list-group position-absolute w-100 shadow mt-1 overflow-auto">
           {addressDropdownOptions.map((option) => (
             <button
               type="button"
               key={JSON.stringify(option.value)}
-              className="block w-full text-left py-2 px-4 text-black text-sm border-none outline-none cursor-pointer transition duration-200 ease-in-out hover:bg-gray-300"
+              className="list-group-item list-group-item-action small"
               onClick={() => {
                 handleAddressSelect(option.value);
                 setShowDropdown(false);
@@ -237,9 +237,9 @@ const CompanyForm = ({
         </div>
 
         <div className="mt-6">
-          <p className="ml-2 font-semibold">Price band</p>
+          <p className="fw-semibold small mb-1 d-block">Price band</p>
 
-          <div className="flex gap-x-12 bg-white p-4 mt-2 rounded-[13px]">
+          <div className="flex gap-x-12 p-3 mt-2 rounded border bg-body-tertiary">
             {priceBands?.length > 0 && priceBands.map((priceBand) => (
               <Checkbox
                 key={priceBand.guid}

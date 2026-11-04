@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useForm } from "react-hook-form";
 
 import Input from "@/components/Input";
+import AuthLayout from "@/components/AuthLayout";
 import Button from "@/components/Button";
 import { useStores } from "@/hooks/useStores";
 import { errorLogger } from "@/services/axiosService";
@@ -55,40 +56,28 @@ const ResetPasswordPage = () => {
   };
 
   return (
-    <main className="bg-[#3F4B63] min-h-[100dvh]">
-      <section className="h-[100dvh] grid place-items-center">
-        <form
-          onSubmit={handleSubmit(submit)}
-          className="bg-[#EAEAEA] rounded-[13px] py-8 px-4 w-[450px]"
-        >
-          <div className="grid place-items-center gap-x-4">
-            <h1 className="text-[18px] font-semibold">Set New Password</h1>
-          </div>
-
-          <Input
-            id="password"
-            label="Password"
-            type="password"
-            placeholder="Password"
-            register={register}
-            errors={errors}
-          />
-
-          <Input
-            id="confirmPassword"
-            label="Confirm Password"
-            type="password"
-            placeholder="Confirm Password"
-            register={register}
-            errors={errors}
-          />
-
-          <div className="flex justify-center mt-6">
-            <Button>Set password</Button>
-          </div>
-        </form>
-      </section>
-    </main>
+    <AuthLayout title="Set a new password" subtitle="Choose a password for your account.">
+      <form onSubmit={handleSubmit(submit)}>
+        <Input
+          id="password"
+          label="Password"
+          type="password"
+          placeholder="New password"
+          register={register}
+          errors={errors}
+          withoutTopMargin
+        />
+        <Input
+          id="confirmPassword"
+          label="Confirm password"
+          type="password"
+          placeholder="Repeat the password"
+          register={register}
+          errors={errors}
+        />
+        <Button className="w-100 mt-4">Set password</Button>
+      </form>
+    </AuthLayout>
   );
 };
 
