@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { TItemProduct } from "@/types/api";
+import useCompare from "@/hooks/useCompare";
 
 type Props = {
   product: TItemProduct;
@@ -16,6 +17,8 @@ type Props = {
 const SelectableProduct = ({ product, busy, disabled, href, onChange }: Props) => {
   const [imgOk, setImgOk] = useState(true);
   const qty = product.selected_quantity || 0;
+  const compare = useCompare();
+  const comparing = compare.has(product.guid);
   const selected = qty > 0;
 
   return (
@@ -56,12 +59,20 @@ const SelectableProduct = ({ product, busy, disabled, href, onChange }: Props) =
         <p className="text-xs text-gray-500">
           {[product.supplier?.name, product.sku].filter(Boolean).join(" · ")}
         </p>
-        <Link
-          href={href}
-          className="text-xs underline text-gray-600 w-fit mt-auto pt-1"
-        >
-          View details
-        </Link>
+        <div className="mt-auto pt-1 flex items-center justify-between gap-2">
+          <Link href={href} className="text-xs underline text-gray-600">
+            View details
+          </Link>
+          <label className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={comparing}
+              onChange={() => compare.toggle(product.guid)}
+              aria-label={`Compare ${product.name}`}
+            />
+            Compare
+          </label>
+        </div>
       </div>
 
       <div className="px-3 pb-3">

@@ -5,9 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import PageHeader from "@/components/PageHeader";
 import SelectableProduct from "@/components/claim/SelectableProduct";
 import FilterBar from "@/components/claim/FilterBar";
+import CompareBar from "@/components/claim/CompareBar";
 import withAuth from "@/hoc/withAuth";
 import { useStores } from "@/hooks/useStores";
 import useDebounce from "@/hooks/useDebounce";
@@ -167,18 +167,64 @@ const ClaimRoomPage = () => {
   return (
     <DashboardLayout>
       <div className="max-w-[1280px] mx-auto px-4 py-8">
-        <PageHeader
-          back={{ href: `/claim?job=${jobGUID}`, label: "All rooms" }}
-          eyebrow={
-            <>
-              Claim {claim.job_number}
-              {claim.company ? ` · Price band ${claim.company.price_band ?? "not set"}` : ""}
-            </>
-          }
-          title={room.quantity > 1 ? `${room.name} × ${room.quantity}` : room.name}
-          subtitle={room.notes ?? undefined}
-          actions={<span className="text-sm text-gray-600">{doneCount} of {items.length} items chosen</span>}
-        />
+        <Link href={`/claim?job=${jobGUID}`} className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-[#6D21C7] mb-3">
+          ← All rooms
+        </Link>
+
+        <section
+          aria-labelledby="room-title"
+          className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#6D21C7] to-[#4B1590] text-white shadow-sm"
+        >
+          <div className="flex flex-wrap items-center gap-6 p-6 md:p-8">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full bg-white/15 px-3 py-1">Claim {claim.job_number}</span>
+                {claim.company && (
+                  <span className="rounded-full bg-white/15 px-3 py-1">
+                    Price band {claim.company.price_band ?? "not set"}
+                  </span>
+                )}
+                {claim.ordered && <span className="rounded-full bg-[#31B75C] px-3 py-1">Ordered</span>}
+              </div>
+              <h1 id="room-title" className="mt-3 text-3xl md:text-4xl font-bold tracking-tight">
+                {room.name}
+                {room.quantity > 1 && <span className="font-normal text-white/80"> × {room.quantity}</span>}
+              </h1>
+              {room.notes ? (
+                <p className="mt-2 max-w-2xl text-white/85">{room.notes}</p>
+              ) : (
+                <p className="mt-2 max-w-2xl text-white/85">
+                  Work through each item below and choose the replacement products you&apos;d like.
+                </p>
+              )}
+            </div>
+
+            {/* progress */}
+            <div className="flex items-center gap-4">
+              <div
+                className="relative grid h-24 w-24 place-items-center rounded-full"
+                style={{
+                  background: `conic-gradient(#31B75C ${items.length ? (doneCount / items.length) * 360 : 0}deg, rgba(255,255,255,0.18) 0)`,
+                }}
+                role="img"
+                aria-label={`${doneCount} of ${items.length} items chosen`}
+              >
+                <div className="grid h-[78px] w-[78px] place-items-center rounded-full bg-[#5a19a8] text-center leading-tight">
+                  <span className="text-xl font-bold">{doneCount}/{items.length}</span>
+                  <span className="text-[10px] uppercase tracking-wide text-white/70">items</span>
+                </div>
+              </div>
+              <div className="hidden sm:block text-sm">
+                <p className="font-semibold">
+                  {doneCount === 0 ? "Not started" : doneCount === items.length ? "All items chosen" : "In progress"}
+                </p>
+                <Link href={`/claim?job=${jobGUID}&review=1`} className="mt-1 inline-block underline text-white/85 hover:text-white">
+                  Review selections
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           {/* Items needed for this room */}
@@ -295,7 +341,13 @@ const ClaimRoomPage = () => {
             )}
           </section>
         </div>
+        <div className="h-20" aria-hidden />
       </div>
+      {current && (
+        <CompareBar
+          compareHref={`/comparison-list?job=${jobGUID}&room=${roomSlug}&item=${encodeURIComponent(current.item)}`}
+        />
+      )}
     </DashboardLayout>
   );
 };

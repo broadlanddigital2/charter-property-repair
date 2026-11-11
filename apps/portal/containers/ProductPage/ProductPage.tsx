@@ -11,6 +11,8 @@ import { errorLogger } from "@/services/axiosService";
 import { getClaimSelection, getProductAttrs, getProductByGUID, setSelection } from "@/services/requestService";
 import { TProduct } from "@/types/api";
 import { productDetails } from "./productDetails";
+import useCompare from "@/hooks/useCompare";
+import CompareBar from "@/components/claim/CompareBar";
 
 const PREFERRED = ["Colour", "Finish", "Material", "Style", "Range", "Type", "Size", "Width", "Height", "Depth", "Length"];
 
@@ -34,6 +36,7 @@ const ProductPage = () => {
   const [broken, setBroken] = useState<Record<string, boolean>>({});
   const [qty, setQty] = useState(0);
   const [busy, setBusy] = useState(false);
+  const compare = useCompare();
 
   useEffect(() => {
     if (!guid) return;
@@ -208,6 +211,19 @@ const ProductPage = () => {
                   </div>
                 )}
 
+                <button
+                  type="button"
+                  onClick={() => compare.toggle(product.guid)}
+                  aria-pressed={compare.has(product.guid)}
+                  className={`mt-4 rounded-md border px-4 py-2 text-sm font-semibold ${
+                    compare.has(product.guid)
+                      ? "border-[#6D21C7] bg-[#6D21C7]/10 text-[#6D21C7]"
+                      : "border-gray-300 bg-white hover:border-[#6D21C7]"
+                  }`}
+                >
+                  {compare.has(product.guid) ? "✓ Added to compare" : "+ Add to compare"}
+                </button>
+
                 {facts.length > 0 && (
                   <dl className="mt-6 grid grid-cols-2 gap-3">
                     {facts.slice(0, 8).map(([k, vs]) => (
@@ -281,7 +297,11 @@ const ProductPage = () => {
             </div>
           </>
         )}
+        <div className="h-20" aria-hidden />
       </div>
+      <CompareBar
+        compareHref={`/comparison-list${inClaim ? `?job=${job}&room=${room}&item=${encodeURIComponent(item)}` : ""}`}
+      />
     </DashboardLayout>
   );
 };
