@@ -233,6 +233,7 @@ export type TClaimView = {
   budget: number | null;
   ordered: boolean;
   budget_summary: TBudgetSummary;
+  company?: { name: string; price_band: number | null } | null;
   rooms: TClaimRoom[];
 };
 

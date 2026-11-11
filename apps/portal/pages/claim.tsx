@@ -83,7 +83,10 @@ const ClaimPage = () => {
         </Link>
         <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm text-gray-500">Claim {claim.job_number}</p>
+            <p className="text-sm text-gray-500">
+              Claim {claim.job_number}
+              {claim.company?.name ? ` · ${claim.company.name}` : ""}
+            </p>
             <h1 className="text-2xl font-bold">{reviewing ? "Review your selections" : "Choose a room"}</h1>
             {address && <p className="text-gray-600">{address}</p>}
           </div>
@@ -98,7 +101,7 @@ const ClaimPage = () => {
         </div>
 
         <div className="mt-6">
-          <BudgetBar summary={claim.budget_summary} />
+          <BudgetBar summary={claim.budget_summary} priceBand={claim.company?.price_band ?? null} />
         </div>
 
         {claim.ordered && (

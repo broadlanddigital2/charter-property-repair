@@ -4,7 +4,7 @@ const gbp = (n: number | null | undefined) =>
   `£${Number(n ?? 0).toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
 /** Budget used vs remaining, and what the customer will pay. */
-const BudgetBar = ({ summary }: { summary: TBudgetSummary }) => {
+const BudgetBar = ({ summary, priceBand }: { summary: TBudgetSummary; priceBand?: number | null }) => {
   if (!summary) return null;
   const budget = Number(summary.budget ?? 0);
   const used = Number(summary.total_in_budget ?? 0);
@@ -18,6 +18,12 @@ const BudgetBar = ({ summary }: { summary: TBudgetSummary }) => {
           <p className="text-sm text-gray-500">Budget</p>
           <p className="text-2xl font-bold">{summary.budget === null ? "Not set" : gbp(budget)}</p>
         </div>
+        {priceBand !== undefined && (
+          <div>
+            <p className="text-sm text-gray-500">Price band</p>
+            <p className="text-2xl font-bold">{priceBand === null ? "Not set" : `Grade ${priceBand}`}</p>
+          </div>
+        )}
         <div className="text-right">
           <p className="text-sm text-gray-500">{over ? "Over budget by" : "Remaining"}</p>
           <p className={`text-2xl font-bold ${over ? "text-red-600" : "text-[#027A48]"}`}>

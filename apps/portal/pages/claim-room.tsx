@@ -158,7 +158,7 @@ const ClaimRoomPage = () => {
         </div>
 
         <div className="mt-5">
-          <BudgetBar summary={claim.budget_summary} />
+          <BudgetBar summary={claim.budget_summary} priceBand={claim.company?.price_band ?? null} />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[280px_1fr]">
