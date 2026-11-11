@@ -16,6 +16,18 @@ create policy "product_attrs: active users read" on public.product_attrs
 create policy "product_attrs: admins write" on public.product_attrs
   for all to authenticated using ((select private.is_admin())) with check ((select private.is_admin()));
 
+-- Parse JSON text, returning {} for anything malformed (supplier data is messy)
+create or replace function private.try_jsonb(t text)
+returns jsonb language plpgsql immutable set search_path = ''
+as $$
+begin
+  if t is null or t !~ '^\s*\{' then return '{}'; end if;
+  return t::jsonb;
+exception when others then
+  return '{}';
+end;
+$$;
+
 -- Supplier attribute name -> common filter name (null = not used as a filter)
 create or replace function private.attr_key(k text)
 returns text language sql immutable set search_path = ''
@@ -106,10 +118,10 @@ begin
   ), raw as (
     -- JSON objects stored as text (Howdens specifications / measurements)
     select src.id, kv.key k, kv.value v from src,
-      lateral jsonb_each_text(case when (src.m->>'specifications') ~ '^\s*\{' then (src.m->>'specifications')::jsonb else '{}' end) kv
+      lateral jsonb_each_text(private.try_jsonb(src.m->>'specifications')) kv
     union all
     select src.id, kv.key, kv.value from src,
-      lateral jsonb_each_text(case when (src.m->>'measurements') ~ '^\s*\{' then (src.m->>'measurements')::jsonb else '{}' end) kv
+      lateral jsonb_each_text(private.try_jsonb(src.m->>'measurements')) kv
     union all
     -- "Key: value | Key: value" text (Travis Perkins, Eastbrooke)
     select src.id, btrim(split_part(part, ':', 1)), btrim(substr(part, strpos(part, ':') + 1)) from src,
