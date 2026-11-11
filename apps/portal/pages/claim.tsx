@@ -166,6 +166,24 @@ const ClaimPage = () => {
                         {ls.map((l) => (
                           <li key={l.product.guid} className="flex items-center gap-4 px-4 py-3 border-t first:border-t-0">
                             <span className="font-semibold w-10 text-right">{l.quantity}×</span>
+                            <Link
+                              href={`/product?guid=${l.product.guid}&job=${claim.guid}&room=${l.room}&item=${encodeURIComponent(l.item)}`}
+                              className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#F3ECFB] p-1 flex items-center justify-center"
+                              aria-hidden
+                              tabIndex={-1}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={l.product.image || "/images/placeholder.jpg"}
+                                alt=""
+                                loading="lazy"
+                                className="block h-full w-full object-contain"
+                                onError={(e) => {
+                                  const img = e.currentTarget;
+                                  if (!img.src.endsWith("/images/placeholder.jpg")) img.src = "/images/placeholder.jpg";
+                                }}
+                              />
+                            </Link>
                             <span className="flex-1">
                               {l.product.name}
                               <span className="block text-xs text-gray-500">{l.product.sku}</span>
