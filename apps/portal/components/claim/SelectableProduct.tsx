@@ -22,20 +22,7 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
         selected ? "border-[#6D20C7]" : "border-transparent"
       }`}
     >
-      <span
-        className={`absolute top-2 left-2 z-10 text-[11px] font-semibold px-2 py-0.5 rounded-full shadow ${
-          Number(product.in_budget) ? "bg-[#D1FADF] text-[#027A48]" : "bg-[#6D20C7] text-white"
-        }`}
-      >
-        {Number(product.in_budget) ? "Included in budget" : "Extra cost"}
-      </span>
-      {selected && (
-        <span className="absolute top-2 right-2 z-10 text-[11px] font-semibold px-3 py-1 rounded-full bg-[#6D20C7] text-white">
-          Added × {qty}
-        </span>
-      )}
-
-      <div className="bg-[#F3ECFB] h-[120px] grid place-items-center p-2 pt-8">
+      <div className="bg-[#F3ECFB] h-[120px] grid place-items-center p-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imgOk && product.image ? product.image : "/images/placeholder.jpg"}
@@ -47,6 +34,20 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
       </div>
 
       <div className="px-3 pt-3 pb-2 flex flex-col gap-1 flex-1">
+        <div className="flex flex-wrap gap-1 mb-1">
+          <span
+            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+              Number(product.in_budget) ? "bg-[#D1FADF] text-[#027A48]" : "bg-[#6D20C7] text-white"
+            }`}
+          >
+            {Number(product.in_budget) ? "Included in budget" : "Extra cost"}
+          </span>
+          {selected && (
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#6D20C7] text-white">
+              Added × {qty}
+            </span>
+          )}
+        </div>
         <p className="text-sm font-semibold leading-snug break-words">{product.name}</p>
         <p className="text-xs text-gray-500">
           {[product.supplier?.name, product.sku].filter(Boolean).join(" · ")}
