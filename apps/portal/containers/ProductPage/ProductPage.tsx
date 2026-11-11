@@ -1,424 +1,289 @@
-import Image from "next/image";
-import Cookies from "js-cookie";
-import { toast } from "react-toastify";
+import Link from "next/link";
 import { observer } from "mobx-react-lite";
-import { useEffect, useState } from "react";
-import { NextRouter, useRouter } from "next/router";
+import { useRouter } from "next/router";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 
-import { Icon } from "@/components/Icon";
-import { CookiesEnum } from "@/enums/cookies";
+import withAuth from "@/hoc/withAuth";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useStores } from "@/hooks/useStores";
 import { errorLogger } from "@/services/axiosService";
-import { TProduct, TProductDetails } from "@/types/api";
-import DashboardLayout from "@/components/DashboardLayout";
-import {
-  createBasket,
-  createBasketLine,
-  getBasket,
-  getProductByGUID,
-} from "@/services/requestService";
-import { BasketStore } from "@/store/basketStore";
-import Button from "@/components/Button";
-import { BASE64_PLACEHOLDER } from "@/utils/const";
+import { getClaimSelection, getProductAttrs, getProductByGUID, setSelection } from "@/services/requestService";
+import { TProduct } from "@/types/api";
+import { productDetails } from "./productDetails";
 
-const PRODUCT_SUITABILITY = [
-  {
-    title: "Kitchens",
-    icon: "/icons/Kitchens.svg",
-  },
-  {
-    title: "Bathrooms",
-    icon: "/icons/Bathrooms.svg",
-  },
-  {
-    title: "Wet Areas",
-    icon: "/icons/Wet Areas.svg",
-  },
-  {
-    title: "Walls",
-    icon: "/icons/Walls.svg",
-  },
-];
+const PREFERRED = ["Colour", "Finish", "Material", "Style", "Range", "Type", "Size", "Width", "Height", "Depth", "Length"];
 
+/**
+ * Product details. Opened from a claim room (?job&room&item) it also lets the
+ * user add the product to that item, or change the quantity.
+ */
 const ProductPage = () => {
-  const { query } = useRouter();
   const router = useRouter();
-  const { guid, job, category, subcategory, supplier } = query;
+  const { loaderStore } = useStores();
+  const q = router.query;
+  const guid = typeof q.guid === "string" ? q.guid : "";
+  const job = typeof q.job === "string" ? q.job : "";
+  const room = typeof q.room === "string" ? q.room : "";
+  const item = typeof q.item === "string" ? q.item : "";
+  const inClaim = !!(job && room && item);
 
-  const { loaderStore, authStore, basketStore } = useStores();
-
-  const [product, setProduct] = useState<TProduct | null>(null);
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [imageError, setImageError] = useState(false);
-
-  const handleImageError = () => {
-    setImageError(true);
-  };
-
-  const imageUrl = imageError
-    ? "/images/placeholder.jpg"
-    : product?.image || "/images/placeholder.jpg";
-
-  const selectedCategory = subcategory || category;
-
-  const productData: TProductDetails | null = product?.miscellaneous
-    ? JSON.parse(product?.miscellaneous)
-    : null;
-
-  // Currently only tiles have
-  const specs = productData?.technicalSpecifications?.split(" | ") || [];
-  const hasMoreSpecs = specs.length > 1;
+  const [product, setProduct] = useState<(TProduct & { rooms?: { slug: string; name: string }[] }) | null>(null);
+  const [attrs, setAttrs] = useState<{ key: string; value: string }[]>([]);
+  const [active, setActive] = useState(0);
+  const [broken, setBroken] = useState<Record<string, boolean>>({});
+  const [qty, setQty] = useState(0);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (guid) {
-      (async () => {
-        try {
-          loaderStore.setLoading(true);
-          const { product } = await getProductByGUID(guid as string);
-          setProduct(product);
-        } catch (error) {
-          errorLogger(error, "Failed to fetch the product data");
-        } finally {
-          loaderStore.setLoading(false);
+    if (!guid) return;
+    (async () => {
+      try {
+        loaderStore.setLoading(true);
+        const [{ product: p }, a] = await Promise.all([getProductByGUID(guid), getProductAttrs(guid).catch(() => [])]);
+        setProduct(p);
+        setAttrs(a);
+        setActive(0);
+        if (inClaim) {
+          const lines = await getClaimSelection(job);
+          const line = lines.find((l) => l.product.guid === guid && l.room === room && l.item === item);
+          setQty(line?.quantity ?? 0);
         }
-      })();
-    }
-  }, [guid]);
-
-  const handleAddToComparison = async () => {
-    const comparisonItems = Cookies.get(CookiesEnum.ComparisonItems);
-
-    if (product) {
-      if (!comparisonItems) {
-        Cookies.set(
-          CookiesEnum.ComparisonItems,
-          JSON.stringify([product.guid])
-        );
-        toast.success("Product was added to comparison list");
-      } else {
-        const parsedComparisonItems: string[] = JSON.parse(comparisonItems);
-
-        if (parsedComparisonItems.includes(product.guid)) {
-          toast.error("Product is already in comparison list");
-        } else {
-          Cookies.set(
-            CookiesEnum.ComparisonItems,
-            JSON.stringify([...parsedComparisonItems, product.guid])
-          );
-          toast.success("Product was added to comparison list");
-        }
+      } catch (error) {
+        errorLogger(error, "Couldn't load this product");
+      } finally {
+        loaderStore.setLoading(false);
       }
-    }
-  };
+    })();
+  }, [guid, job, room, item]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleAddToBasket = async () => {
+  const details = useMemo(() => productDetails(product?.miscellaneous, product?.image), [product]);
+  const images = details.images.filter((u) => !broken[u]);
+  const mainImage = images[active] ?? images[0] ?? "/images/placeholder.jpg";
+
+  // key facts: the normalised attributes, in a sensible order
+  const facts = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const a of attrs) m.set(a.key, [...(m.get(a.key) ?? []), a.value]);
+    return Array.from(m.entries()).sort(
+      (x, y) => (PREFERRED.indexOf(x[0]) + 1 || 99) - (PREFERRED.indexOf(y[0]) + 1 || 99)
+    );
+  }, [attrs]);
+
+  const backHref = inClaim
+    ? `/claim-room?job=${job}&room=${room}&item=${encodeURIComponent(item)}`
+    : null;
+
+  const change = async (n: number) => {
+    if (!product) return;
     try {
-      loaderStore.setLoading(true);
-
-      const companyGUID = authStore.getUser?.company?.guid;
-      const productGUID = product?.guid;
-
-      if (companyGUID && productGUID) {
-        const basketGUID = Cookies.get(CookiesEnum.BasketGUID);
-
-        if (basketGUID && job) {
-          const existingBasket = await getBasket(basketGUID, job as string);
-
-          if (existingBasket?.basket) {
-            basketStore.setBasket(existingBasket.basket);
-
-            // create basket line and redirect to basket page
-            await createBasketLine({
-              basketGUID: existingBasket.basket.guid,
-              productGUID: product.guid,
-            });
-
-            const query: {
-              job: string;
-              category: string;
-              supplier: string;
-              basket: string;
-              subcategory?: string;
-            } = {
-              job: job as string,
-              category: category as string,
-              supplier: supplier as string,
-              basket: existingBasket.basket.guid,
-            };
-
-            if (subcategory) {
-              query.subcategory = subcategory as string;
-            }
-
-            await router.push({
-              pathname: "/process-claim",
-              query,
-            });
-          } else {
-            await handleCreateNewBasket({
-              companyGUID,
-              product,
-              basketStore,
-              router,
-              job: job as string,
-              type: selectedCategory as string,
-              supplier: supplier as string,
-            });
-          }
-        } else {
-          await handleCreateNewBasket({
-            companyGUID,
-            product,
-            basketStore,
-            router,
-            job: job as string,
-            type: selectedCategory as string,
-            supplier: supplier as string,
-          });
-        }
-      } else {
-        toast.error(
-          "User is not connected to company or product does not exist"
-        );
-      }
+      setBusy(true);
+      const res = await setSelection(job, room, item, product.guid, n);
+      setQty(res.quantity);
+      if (n > 0 && qty === 0) toast.success(`Added to ${item}`);
+      if (n === 0) toast.info(`Removed from ${item}`);
     } catch (error) {
-      errorLogger(error);
+      errorLogger(error, "Couldn't update your selection");
     } finally {
-      loaderStore.setLoading(false);
+      setBusy(false);
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="max-w-[1370px] mx-auto px-4">
-        <div className="mt-24 flex gap-x-3 items-center justify-between">
-          <Button
-            onClick={() => router.back()}
-            icon={
-              <Icon
-                src="/icons/left-arrow.svg"
-                alt="left arrow icon"
-                size={22}
-              />
-            }
-          >
-            Go Back
-          </Button>
-
-          <Button
-            href="/comparison-list"
-            icon={
-              <Icon src="/icons/compare.svg" alt="comparison icon" size={22} />
-            }
-          >
-            Comparison List
-          </Button>
-        </div>
+      <div className="max-w-[1280px] mx-auto px-4 py-8">
+        {backHref ? (
+          <Link href={backHref} className="inline-block text-sm text-gray-600 hover:text-[#6D21C7] mb-4">
+            ← Back to {item}
+          </Link>
+        ) : (
+          <button type="button" onClick={() => router.back()} className="text-sm text-gray-600 hover:text-[#6D21C7] mb-4">
+            ← Back
+          </button>
+        )}
 
         {product && (
-          <div className="my-8 flex gap-x-5">
-            <div className="flex-1 flex flex-col">
-              <div className="relative h-[500px]">
-                <Image
-                  src={imageUrl}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  quality={90}
-                  placeholder="blur"
-                  blurDataURL={BASE64_PLACEHOLDER}
-                  onError={handleImageError}
-                  priority={true}
-                />
+          <>
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              {/* Gallery */}
+              <div>
+                <div className="rounded-xl bg-white shadow-sm aspect-square max-h-[520px] w-full flex items-center justify-center overflow-hidden p-6">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={mainImage}
+                    alt={product.name}
+                    className="block h-full w-full object-contain"
+                    onError={() => mainImage && setBroken((b) => ({ ...b, [mainImage]: true }))}
+                  />
+                </div>
+                {images.length > 1 && (
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="list" aria-label="More images">
+                    {images.map((src, i) => (
+                      <button
+                        key={src}
+                        type="button"
+                        role="listitem"
+                        aria-label={`Image ${i + 1}`}
+                        aria-pressed={i === active}
+                        onClick={() => setActive(i)}
+                        className={`h-20 w-20 shrink-0 rounded-lg bg-white p-1 ring-2 ${
+                          i === active ? "ring-[#6D21C7]" : "ring-transparent hover:ring-gray-300"
+                        }`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={src}
+                          alt=""
+                          loading="lazy"
+                          className="block h-full w-full object-contain"
+                          onError={() => setBroken((b) => ({ ...b, [src]: true }))}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                <div className="absolute top-3 left-3 z-10">
+              {/* Summary */}
+              <div>
+                <p className="text-sm text-gray-500">
+                  {[product.supplier?.name, product.category?.name].filter(Boolean).join(" · ")}
+                </p>
+                <h1 className="mt-1 text-2xl md:text-3xl font-bold tracking-tight">{product.name}</h1>
+                <p className="mt-1 text-sm text-gray-500">SKU {product.sku}</p>
+
+                <div className="mt-4 flex flex-wrap gap-2">
                   <span
-                    className={`text-sm font-semibold px-3 py-1 rounded-full shadow ${
-                      product.in_budget
-                        ? "bg-[#D1FADF] text-[#027A48]" // Included
-                        : "bg-[#E5D1FA] text-[#6941C6]" // Extra Cost
+                    className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                      Number(product.in_budget) ? "bg-[#D1FADF] text-[#027A48]" : "bg-[#6D21C7] text-white"
                     }`}
                   >
-                    {product.in_budget ? "Included in Budget" : "Extra Cost"}
+                    {Number(product.in_budget) ? "Included in budget" : "Extra cost"}
                   </span>
-                </div>
-              </div>
-
-              <div className="mt-4 bg-[#6D21C7] text-white flex justify-between items-center p-4">
-                <div className="flex items-center gap-x-4">
-                  <Icon src="/icons/ar-view.svg" alt="ar-view icon" size={54} />
-
-                  <p className="max-w-[160px] text-xl">
-                    View this product in my room
-                  </p>
-                </div>
-
-                <button className="bg-transparent border-2 border-white rounded-[3px] py-2 px-8 duration-300 hover:bg-white hover:text-[#6D20C7]">
-                  View
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1">
-              <div className="bg-[#EDEDED] py-6 px-8 min-h-[345px]">
-                <h1 className="font-bold text-2xl mb-6">{product.name}</h1>
-
-                <hr className="border-black" />
-
-                {productData?.technicalSpecifications && (
-                  <>
-                    <div
-                      className={`mt-6 overflow-hidden transition-all duration-300 ease-in-out ${
-                        isExpanded
-                          ? "max-h-[1000px] opacity-100"
-                          : "max-h-0 opacity-0"
-                      }`}
-                    >
-                      <div className="grid gap-y-5 grid-cols-2">
-                        {specs.map((spec, index) => {
-                          const [specKey, specValue] = spec.split(":");
-
-                          return (
-                            <div key={index} className="contents">
-                              <h3 className="font-bold text-lg">{specKey}:</h3>
-                              <p>{specValue}</p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* {hasMoreSpecs && (
-                        <button
-                          onClick={() => setIsExpanded(!isExpanded)}
-                          className="mt-4 text-[#6D21C7] hover:text-[#6D21C7]/60 font-medium transition-colors duration-200"
-                        >
-                          {isExpanded ? "Show less" : "Show more"}
-                        </button>
-                      )} */}
-                  </>
-                )}
-
-                <div className="mt-6">
-                  <div className="grid gap-y-5 grid-cols-2">
-                    {product?.supplier && (
-                      <div className="contents">
-                        <h3 className="font-bold text-lg">Supplier:</h3>
-
-                        <div className="flex items-center gap-x-4">
-                          {product.supplier.image && (
-                            <Image
-                              src={product.supplier.image}
-                              alt={product.supplier.name}
-                              width={32}
-                              height={32}
-                            />
-                          )}
-                          <p>{product.supplier.name}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {product?.sku && (
-                      <div className="contents">
-                        <h3 className="font-bold text-lg">SKU:</h3>
-                        <p>{product.sku}</p>
-                      </div>
-                    )}
-
-                    {product?.description && (
-                      <div className="col-span-2">
-                        <h3 className="font-bold text-lg mb-2">Description:</h3>
-                        <p>{product.description}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[#6D21C7]/30 p-4 text-white">
-                <h3 className="text-center font-semibold mb-7">
-                  This product is suitable within
-                </h3>
-
-                <div className="flex justify-evenly">
-                  {PRODUCT_SUITABILITY.map((suitability) => (
-                    <div
-                      key={suitability.title}
-                      className="flex flex-col justify-center items-center"
-                    >
-                      <Icon
-                        src={suitability.icon}
-                        alt={suitability.title}
-                        size={69}
-                      />
-                    </div>
+                  {(product.rooms ?? []).slice(0, 6).map((r) => (
+                    <span key={r.slug} className="text-xs px-3 py-1 rounded-full bg-white ring-1 ring-gray-200 text-gray-700">
+                      {r.name}
+                    </span>
                   ))}
                 </div>
-              </div>
 
-              <div className="bg-[#6D21C7] text-white flex justify-between items-center gap-x-8 px-4 py-5 h-[88px]">
-                <button
-                  onClick={handleAddToComparison}
-                  className="bg-[#6D20C7] text-white flex items-center justify-center gap-x-3 border-2 border-white py-2 px-6 rounded-[3px]"
-                >
-                  <Icon
-                    src="/icons/compare.svg"
-                    alt="comparison icon"
-                    size={22}
-                  />
+                {inClaim && (
+                  <div className="mt-6 rounded-xl bg-white shadow-sm p-5">
+                    <p className="text-sm text-gray-500">
+                      For <b className="text-[#1F1A2B]">{item}</b>
+                    </p>
+                    {qty === 0 ? (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => change(1)}
+                        className="mt-3 w-full rounded-md bg-[#6D21C7] py-3 font-semibold text-white hover:bg-[#5a19a8] disabled:opacity-50"
+                      >
+                        Add to {item}
+                      </button>
+                    ) : (
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <div className="flex items-center rounded-md border" role="group" aria-label="Quantity">
+                          <button type="button" className="px-4 py-2 hover:bg-gray-100" disabled={busy} onClick={() => change(qty - 1)} aria-label="Decrease quantity">
+                            −
+                          </button>
+                          <span className="min-w-[3rem] text-center font-semibold" aria-live="polite">
+                            {qty}
+                          </span>
+                          <button type="button" className="px-4 py-2 hover:bg-gray-100" disabled={busy} onClick={() => change(qty + 1)} aria-label="Increase quantity">
+                            +
+                          </button>
+                        </div>
+                        <span className="text-sm text-[#027A48] font-semibold">Added</span>
+                        <button type="button" className="ml-auto text-sm text-red-600 underline" disabled={busy} onClick={() => change(0)}>
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                    {backHref && (
+                      <Link href={backHref} className="mt-3 inline-block text-sm underline text-gray-600">
+                        Keep choosing {item.toLowerCase()}
+                      </Link>
+                    )}
+                  </div>
+                )}
 
-                  <span>Add to comparison</span>
-                </button>
+                {facts.length > 0 && (
+                  <dl className="mt-6 grid grid-cols-2 gap-3">
+                    {facts.slice(0, 8).map(([k, vs]) => (
+                      <div key={k} className="rounded-lg bg-white p-3 shadow-sm">
+                        <dt className="text-xs text-gray-500">{k}</dt>
+                        <dd className="font-medium">{vs.join(", ")}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
 
-                <button
-                  onClick={handleAddToBasket}
-                  className="bg-transparent flex justify-center items-center gap-x-3 border-2 border-white rounded-[3px] py-2 px-6"
-                >
-                  <Icon src="/icons/basket.svg" alt="basket" size={26} />
-
-                  <span>Add to basket</span>
-                </button>
+                {product.description && product.description.trim() !== product.name.trim() && (
+                  <p className="mt-6 text-gray-700 leading-relaxed whitespace-pre-line">{product.description}</p>
+                )}
               </div>
             </div>
-          </div>
+
+            {/* Details */}
+            <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              {details.specs.length > 0 && (
+                <section>
+                  <h2 className="text-lg font-bold mb-3">Specification</h2>
+                  <dl className="divide-y rounded-xl bg-white shadow-sm">
+                    {details.specs.map((s) => (
+                      <div key={s.label} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-4 px-5 py-2.5 text-sm">
+                        <dt className="text-gray-500">{s.label}</dt>
+                        <dd className="break-words">{s.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+
+              <div className="space-y-8">
+                {details.features.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-bold mb-3">Features</h2>
+                    <ul className="rounded-xl bg-white shadow-sm p-5 space-y-2 text-sm">
+                      {details.features.map((f) => (
+                        <li key={f} className="flex gap-2">
+                          <span aria-hidden className="text-[#31B75C]">✓</span>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                {details.documents.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-bold mb-3">Documents</h2>
+                    <ul className="divide-y rounded-xl bg-white shadow-sm text-sm">
+                      {details.documents.map((d) => (
+                        <li key={d.url}>
+                          <a href={d.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-5 py-3 hover:text-[#6D21C7]">
+                            <span aria-hidden>📄</span>
+                            {d.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                {details.link && (
+                  <a href={details.link} target="_blank" rel="noreferrer" className="inline-block text-sm underline text-gray-600">
+                    View on the {product.supplier?.name ?? "supplier"} website ↗
+                  </a>
+                )}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </DashboardLayout>
   );
 };
 
-async function handleCreateNewBasket({
-  companyGUID,
-  product,
-  basketStore,
-  router,
-  job,
-  type,
-  supplier,
-}: {
-  companyGUID: string;
-  product: TProduct;
-  basketStore: BasketStore;
-  router: NextRouter;
-  job: string;
-  type: string;
-  supplier: string;
-}) {
-  const { basket } = await createBasket(companyGUID);
-  Cookies.set(CookiesEnum.BasketGUID, basket.guid);
-
-  basketStore.setBasket(basket);
-
-  await createBasketLine({
-    basketGUID: basket.guid,
-    productGUID: product.guid,
-  });
-
-  await router.push({
-    pathname: "/process-claim",
-    query: { job, type, supplier, basket: basket.guid },
-  });
-}
-
-export default observer(ProductPage);
+export default withAuth(observer(ProductPage));

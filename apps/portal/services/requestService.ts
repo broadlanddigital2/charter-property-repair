@@ -324,3 +324,7 @@ export const getClaimSelection = async (jobGUID: string) =>
 
 export const getItemFilters = async (jobGUID: string, room: string, item: string) =>
   unwrap(await supabase.rpc("api_item_filters", { p_job: jobGUID, p_room: room, p_item: item })) as TItemFilter[];
+
+/** Normalised filter attributes for one product (Colour, Finish, Material…). */
+export const getProductAttrs = async (guid: string) =>
+  unwrap(await supabase.from("product_attrs").select("key, value").eq("product_id", guid)) as { key: string; value: string }[];

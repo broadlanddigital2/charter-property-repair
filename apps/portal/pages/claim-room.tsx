@@ -250,6 +250,7 @@ const ClaimRoomPage = () => {
                       product={p}
                       busy={busyId === p.guid}
                       disabled={claim.ordered}
+                      href={`/product?guid=${p.guid}&job=${jobGUID}&room=${roomSlug}&item=${encodeURIComponent(current.item)}`}
                       onChange={(qty) => change(p, qty)}
                     />
                   ))}

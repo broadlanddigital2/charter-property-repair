@@ -7,11 +7,13 @@ type Props = {
   product: TItemProduct;
   busy: boolean;
   disabled?: boolean;
+  /** product page link (carries the claim/room/item so the user can add from there) */
+  href: string;
   onChange: (quantity: number) => void;
 };
 
 /** Product tile for an item: add it, or change/remove the quantity once added. */
-const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
+const SelectableProduct = ({ product, busy, disabled, href, onChange }: Props) => {
   const [imgOk, setImgOk] = useState(true);
   const qty = product.selected_quantity || 0;
   const selected = qty > 0;
@@ -22,7 +24,7 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
         selected ? "border-[#6D20C7]" : "border-transparent"
       }`}
     >
-      <div className="bg-[#F3ECFB] h-[170px] shrink-0 overflow-hidden flex items-center justify-center p-2">
+      <Link href={href} tabIndex={-1} aria-hidden className="bg-[#F3ECFB] h-[170px] shrink-0 overflow-hidden flex items-center justify-center p-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imgOk && product.image ? product.image : "/images/placeholder.jpg"}
@@ -31,7 +33,7 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
           onError={() => setImgOk(false)}
           className="block h-full w-full object-contain"
         />
-      </div>
+      </Link>
 
       <div className="px-3 pt-3 pb-2 flex flex-col gap-1 flex-1">
         <div className="flex flex-wrap gap-1 mb-1">
@@ -48,13 +50,14 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
             </span>
           )}
         </div>
-        <p className="text-sm font-semibold leading-snug break-words">{product.name}</p>
+        <Link href={href} className="text-sm font-semibold leading-snug break-words hover:text-[#6D21C7]">
+          {product.name}
+        </Link>
         <p className="text-xs text-gray-500">
           {[product.supplier?.name, product.sku].filter(Boolean).join(" · ")}
         </p>
         <Link
-          href={`/product?guid=${product.guid}`}
-          target="_blank"
+          href={href}
           className="text-xs underline text-gray-600 w-fit mt-auto pt-1"
         >
           View details
