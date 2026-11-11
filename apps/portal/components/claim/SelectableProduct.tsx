@@ -2,7 +2,6 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { TItemProduct } from "@/types/api";
-import { gbp } from "./BudgetBar";
 
 type Props = {
   product: TItemProduct;
@@ -52,11 +51,10 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
         <p className="text-xs text-gray-500">
           {[product.supplier?.name, product.sku].filter(Boolean).join(" · ")}
         </p>
-        <p className="text-base font-bold mt-auto pt-1">{product.price === null ? "—" : gbp(product.price)}</p>
         <Link
           href={`/product?guid=${product.guid}`}
           target="_blank"
-          className="text-xs underline text-gray-600 w-fit"
+          className="text-xs underline text-gray-600 w-fit mt-auto pt-1"
         >
           View details
         </Link>

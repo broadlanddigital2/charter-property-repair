@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { observer } from "mobx-react-lite";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import BudgetBar from "@/components/claim/BudgetBar";
 import SelectableProduct from "@/components/claim/SelectableProduct";
 import withAuth from "@/hoc/withAuth";
 import { useStores } from "@/hooks/useStores";
@@ -14,7 +13,7 @@ import { errorLogger } from "@/services/axiosService";
 import { getClaimView, getItemProducts, setSelection } from "@/services/requestService";
 import { TClaimView, TItemProduct } from "@/types/api";
 
-const PER_PAGE = 24;
+const PER_PAGE = 24; // products per lazy-loaded block
 
 /** One room of a claim: work through its items, choosing products for each. */
 const ClaimRoomPage = () => {
@@ -32,6 +31,7 @@ const ClaimRoomPage = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const q = useDebounce(search, 350);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const room = claim?.rooms.find((r) => r.slug === roomSlug);
   const items = room?.items ?? [];
@@ -73,7 +73,8 @@ const ClaimRoomPage = () => {
         setLoadingProducts(true);
         const res = await getItemProducts(jobGUID, roomSlug, current.item, q.trim(), page, PER_PAGE);
         if (live) {
-          setProducts(res.products);
+          // page 1 replaces the list; later pages append (lazy loading as you scroll)
+          setProducts((prev) => (page === 1 ? res.products : [...prev, ...res.products.filter((p) => !prev.some((x) => x.guid === p.guid))]));
           setTotal(res.total);
         }
       } catch (error) {
@@ -86,6 +87,21 @@ const ClaimRoomPage = () => {
       live = false;
     };
   }, [jobGUID, roomSlug, current?.item, q, page]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // load the next block of products when the user scrolls near the end of the grid
+  const hasMore = products.length < total;
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || loadingProducts) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) setPage((p) => p + 1);
+      },
+      { rootMargin: "600px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, loadingProducts, products.length]);
 
   const goToItem = (item: string) =>
     router.push({ pathname: "/claim-room", query: { job: jobGUID, room: roomSlug, item } }, undefined, { shallow: true });
@@ -145,7 +161,10 @@ const ClaimRoomPage = () => {
         </Link>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm text-gray-500">Claim {claim.job_number}</p>
+            <p className="text-sm text-gray-500">
+              Claim {claim.job_number}
+              {claim.company ? ` · Price band ${claim.company.price_band ?? "not set"}` : ""}
+            </p>
             <h1 className="text-2xl font-bold">
               {room.name}
               {room.quantity > 1 && <span className="font-normal"> × {room.quantity}</span>}
@@ -157,9 +176,6 @@ const ClaimRoomPage = () => {
           </p>
         </div>
 
-        <div className="mt-5">
-          <BudgetBar summary={claim.budget_summary} priceBand={claim.company?.price_band ?? null} />
-        </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[280px_1fr]">
           {/* Items needed for this room */}
@@ -219,7 +235,7 @@ const ClaimRoomPage = () => {
 
                 <div
                   className="mt-4 grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
-                  style={{ opacity: loadingProducts ? 0.6 : 1 }}
+                  style={{ opacity: loadingProducts && page === 1 ? 0.6 : 1 }}
                 >
                   {products.map((p) => (
                     <SelectableProduct
@@ -235,28 +251,12 @@ const ClaimRoomPage = () => {
                   <p className="mt-6 text-gray-600">No products match that search.</p>
                 )}
 
-                {total > PER_PAGE && (
-                  <div className="flex items-center justify-center gap-4 mt-6">
-                    <button
-                      type="button"
-                      className="rounded-md border px-4 py-2 disabled:opacity-40"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => p - 1)}
-                    >
-                      Previous
-                    </button>
-                    <span className="text-sm">
-                      Page {page} of {Math.ceil(total / PER_PAGE)}
-                    </span>
-                    <button
-                      type="button"
-                      className="rounded-md border px-4 py-2 disabled:opacity-40"
-                      disabled={page >= Math.ceil(total / PER_PAGE)}
-                      onClick={() => setPage((p) => p + 1)}
-                    >
-                      Next
-                    </button>
-                  </div>
+                <div ref={sentinelRef} aria-hidden className="h-1" />
+                {loadingProducts && page > 1 && (
+                  <p className="mt-4 text-center text-sm text-gray-500">Loading more…</p>
+                )}
+                {!hasMore && products.length > PER_PAGE && (
+                  <p className="mt-4 text-center text-sm text-gray-500">That&apos;s everything for {current.item.toLowerCase()}.</p>
                 )}
 
                 <div className="flex flex-wrap justify-between gap-3 mt-8 border-t pt-6">

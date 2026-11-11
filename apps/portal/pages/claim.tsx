@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import BudgetBar, { gbp } from "@/components/claim/BudgetBar";
 import withAuth from "@/hoc/withAuth";
 import { useStores } from "@/hooks/useStores";
 import { errorLogger } from "@/services/axiosService";
@@ -86,6 +85,7 @@ const ClaimPage = () => {
             <p className="text-sm text-gray-500">
               Claim {claim.job_number}
               {claim.company?.name ? ` · ${claim.company.name}` : ""}
+              {claim.company ? ` · Price band ${claim.company.price_band ?? "not set"}` : ""}
             </p>
             <h1 className="text-2xl font-bold">{reviewing ? "Review your selections" : "Choose a room"}</h1>
             {address && <p className="text-gray-600">{address}</p>}
@@ -100,9 +100,6 @@ const ClaimPage = () => {
           )}
         </div>
 
-        <div className="mt-6">
-          <BudgetBar summary={claim.budget_summary} priceBand={claim.company?.price_band ?? null} />
-        </div>
 
         {claim.ordered && (
           <div className="mt-6 rounded-[11px] bg-[#D1FADF] text-[#027A48] p-4">
@@ -180,9 +177,6 @@ const ClaimPage = () => {
                             >
                               {Number(l.product.in_budget) ? "Included" : "Extra cost"}
                             </span>
-                            <span className="w-24 text-right font-semibold">
-                              {gbp(Number(l.product.price ?? 0) * l.quantity)}
-                            </span>
                           </li>
                         ))}
                       </ul>
@@ -202,8 +196,6 @@ const ClaimPage = () => {
                   className="rounded-md bg-[#31B75C] text-white px-6 py-3 font-semibold hover:bg-[#3d9d5b]"
                 >
                   Place order
-                  {Number(claim.budget_summary?.customer_to_pay) > 0 &&
-                    ` (you pay ${gbp(claim.budget_summary?.customer_to_pay)})`}
                 </button>
               )}
             </div>
