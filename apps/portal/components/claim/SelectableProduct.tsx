@@ -22,7 +22,7 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
         selected ? "border-[#6D20C7]" : "border-transparent"
       }`}
     >
-      <div className="bg-[#F3ECFB] h-[120px] shrink-0 overflow-hidden flex items-center justify-center p-2">
+      <div className="bg-[#F3ECFB] h-[170px] shrink-0 overflow-hidden flex items-center justify-center p-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imgOk && product.image ? product.image : "/images/placeholder.jpg"}
