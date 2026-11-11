@@ -218,9 +218,15 @@ const ClaimRoomPage = () => {
                 <p className="font-semibold">
                   {doneCount === 0 ? "Not started" : doneCount === items.length ? "All items chosen" : "In progress"}
                 </p>
-                <Link href={`/claim?job=${jobGUID}&review=1`} className="mt-1 inline-block underline text-white/85 hover:text-white">
-                  Review selections
-                </Link>
+                {claim.rooms.every((r) => r.items.every((i) => i.selected > 0)) ? (
+                  <Link href={`/claim?job=${jobGUID}&review=1`} className="mt-1 inline-block underline text-white/85 hover:text-white">
+                    Review & place order
+                  </Link>
+                ) : (
+                  <span className="mt-1 inline-block text-white/60" title="Choose a product for every item in every room first">
+                    Review & place order
+                  </span>
+                )}
               </div>
             </div>
           </div>

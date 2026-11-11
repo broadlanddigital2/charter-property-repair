@@ -51,6 +51,10 @@ const ClaimPage = () => {
 
   const placeOrder = async () => {
     if (!claim) return;
+    if (claim.rooms.some((r) => r.items.some((i) => i.selected <= 0))) {
+      toast.error("Choose a product for every item before placing your order");
+      return;
+    }
     if (!window.confirm("Place your order? You won't be able to change your selections afterwards.")) return;
     try {
       loaderStore.setLoading(true);
@@ -73,6 +77,11 @@ const ClaimPage = () => {
     );
   }
 
+  // every item in every room must have at least one product before ordering
+  const remaining = claim.rooms.flatMap((r) => r.items.filter((i) => i.selected <= 0).map((i) => ({ room: r, item: i.item })));
+  const allChosen = claim.rooms.length > 0 && remaining.length === 0;
+  const totalItems = claim.rooms.reduce((n, r) => n + r.items.length, 0);
+
   const address = claim.job_address?.replace(/\s*\n\s*/g, ", ").replace(/,\s*$/, "");
 
   return (
@@ -89,10 +98,25 @@ const ClaimPage = () => {
           title={reviewing ? "Review your selections" : "Choose a room"}
           subtitle={address || undefined}
           actions={
-            !claim.ordered && lines.length > 0 && !reviewing ? (
-              <Link href={`/claim?job=${claim.guid}&review=1`} className={bannerButton}>
-                Review & place order ({lines.length})
-              </Link>
+            !claim.ordered && !reviewing ? (
+              allChosen ? (
+                <Link href={`/claim?job=${claim.guid}&review=1`} className={bannerButton}>
+                  Review & place order ({lines.length})
+                </Link>
+              ) : (
+                <span className="flex flex-wrap items-center gap-3">
+                  <span
+                    aria-disabled="true"
+                    className="cursor-not-allowed rounded-md bg-white/30 px-5 py-2.5 text-sm font-semibold text-white/70"
+                    title="Choose a product for every item first"
+                  >
+                    Review & place order
+                  </span>
+                  <span className="text-sm text-white/85">
+                    {totalItems - remaining.length} of {totalItems} items chosen
+                  </span>
+                </span>
+              )
             ) : undefined
           }
         />
@@ -252,14 +276,33 @@ const ClaimPage = () => {
                   </div>
                 </dl>
                 <div className="space-y-3 p-5 pt-2">
-                  {!claim.ordered && lines.length > 0 && (
+                  {!claim.ordered && (
                     <button
                       type="button"
                       onClick={placeOrder}
-                      className="w-full rounded-md bg-[#31B75C] py-3 font-semibold text-white hover:bg-[#2a9e4f]"
+                      disabled={!allChosen}
+                      className="w-full rounded-md bg-[#31B75C] py-3 font-semibold text-white hover:bg-[#2a9e4f] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600"
                     >
                       Place order
                     </button>
+                  )}
+                  {!claim.ordered && !allChosen && (
+                    <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
+                      <p className="font-semibold">Still to choose ({remaining.length}):</p>
+                      <ul className="mt-1 space-y-0.5">
+                        {remaining.slice(0, 8).map((r) => (
+                          <li key={`${r.room.slug}:${r.item}`}>
+                            <Link
+                              href={`/claim-room?job=${claim.guid}&room=${r.room.slug}&item=${encodeURIComponent(r.item)}`}
+                              className="underline"
+                            >
+                              {r.room.name} – {r.item}
+                            </Link>
+                          </li>
+                        ))}
+                        {remaining.length > 8 && <li>…and {remaining.length - 8} more</li>}
+                      </ul>
+                    </div>
                   )}
                   <Link
                     href={`/claim?job=${claim.guid}`}
