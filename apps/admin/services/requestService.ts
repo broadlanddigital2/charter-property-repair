@@ -17,6 +17,8 @@ import {
   TCategoryTree,
   TJob,
   TRoom,
+  TClaim,
+  TClaimRoom,
   TRoomRule,
   TProductRoom,
 } from "@/types/api";
@@ -404,3 +406,39 @@ export const getCategoryCounts = async () =>
 
 export const getProduct = async (guid: string) =>
   unwrap(await supabase.rpc("api_product", { p_id: guid })) as Product | null;
+
+// ---------------------------------------------------------------------------
+// Claims (ServiceM8 jobs) — set-up of budget and rooms
+// ---------------------------------------------------------------------------
+export type TClaimFilter = "open" | "setup" | "ordered" | "all";
+
+export const getClaimsPage = async ({
+  search,
+  filter = "open",
+  page = 1,
+  perPage = 20,
+}: {
+  search?: string;
+  filter?: TClaimFilter;
+  page?: number;
+  perPage?: number;
+}) => {
+  const res = unwrap(
+    await supabase.rpc("api_claims_page", {
+      p_search: search || null,
+      p_filter: filter,
+      p_page: page,
+      p_per_page: perPage,
+    })
+  ) as { total: number; data: TClaim[] };
+  return { claims: res.data, total: res.total };
+};
+
+export const setClaim = async (guid: string, budget: number | null, rooms: TClaimRoom[]) =>
+  unwrap(
+    await supabase.rpc("api_set_claim", {
+      p_job: guid,
+      p_budget: budget,
+      p_rooms: rooms.map(({ slug, quantity, notes }) => ({ slug, quantity, notes })),
+    })
+  ) as { guid: string; budget: number | null; rooms: TClaimRoom[] };

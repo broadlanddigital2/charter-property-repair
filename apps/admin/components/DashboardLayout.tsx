@@ -27,6 +27,7 @@ import CIcon from "@coreui/icons-react";
 import {
   cilAccountLogout,
   cilBasket,
+  cilClipboard,
   cilBuilding,
   cilHome,
   cilMenu,
@@ -46,6 +47,7 @@ const NAV: TNavItem[] = [
   { href: "/companies", text: "Companies", icon: cilBuilding },
   { href: "/users", text: "Users", icon: cilPeople },
   { section: "Catalogue" },
+  { href: "/claims", text: "Claims", icon: cilClipboard },
   { href: "/products", text: "Products", icon: cilBasket },
   { href: "/rooms", text: "Rooms", icon: cilHome },
   { href: "/categories", text: "Categories", icon: cilSitemap },

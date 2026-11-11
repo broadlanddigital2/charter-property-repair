@@ -180,3 +180,18 @@ export type TJob = {
   created_at: string;
   updated_at: string;
 }
+
+export type TClaimRoom = { slug: string; name?: string; quantity: number; notes: string | null };
+
+export type TClaim = {
+  guid: string;
+  job_number: string | null;
+  job_address: string | null;
+  status: string | null;
+  budget: number | null;
+  service_mate_uuid: string;
+  created_at: string;
+  company: { guid: string; name: string };
+  rooms: TClaimRoom[];
+  orders: number;
+};
