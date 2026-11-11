@@ -158,9 +158,21 @@ const ClaimsPage = () => {
                           <span className="badge text-bg-warning">No rooms</span>
                         )}
                       </td>
-                      <td className="small" style={{ maxWidth: 180 }}>
+                      <td className="small" style={{ maxWidth: 220 }}>
                         {c.users?.length ? (
-                          <span className="text-truncate d-block">{c.users.map((u) => u.name).join(", ")}</span>
+                          <div className="d-flex flex-column gap-1">
+                            {c.users.map((u) => (
+                              <span key={u.guid} className="d-flex align-items-center gap-1 text-truncate" title={u.email}>
+                                <span
+                                  className={`badge rounded-pill ${Number(u.active) ? "text-bg-success" : "text-bg-secondary"}`}
+                                  style={{ fontSize: 10 }}
+                                >
+                                  {Number(u.active) ? "Active" : "Inactive"}
+                                </span>
+                                <span className="text-truncate">{u.name}</span>
+                              </span>
+                            ))}
+                          </div>
                         ) : (
                           <span className="badge text-bg-warning">None</span>
                         )}

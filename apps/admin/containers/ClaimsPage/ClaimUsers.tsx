@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 
 import useDebounce from "@/hooks/useDebounce";
 import { errorLogger } from "@/services/axiosService";
-import { claimAddUser, claimRemoveUser, searchContacts } from "@/services/requestService";
+import { claimAddUser, claimRemoveUser, searchContacts, updateCompanyContact } from "@/services/requestService";
 import { TClaimUser } from "@/types/api";
 
 type Props = {
@@ -63,6 +63,14 @@ const ClaimUsers = ({ claimGUID, users, onChange }: Props) => {
     }
   };
 
+  const deactivate = async (u: TClaimUser) => {
+    if (!window.confirm(`Deactivate ${u.name}? They won't be able to sign in until the claim is activated again.`)) return;
+    await run(async () => {
+      await updateCompanyContact({ contact_guid: u.guid, active: 0 });
+      return users.map((x) => (x.guid === u.guid ? { ...x, active: 0 } : x));
+    }, `${u.name} deactivated`);
+  };
+
   const pick = async (u: TClaimUser) => {
     setOpen(false);
     setQuery("");
@@ -105,13 +113,28 @@ const ClaimUsers = ({ claimGUID, users, onChange }: Props) => {
                   {[u.email, u.mobile].filter(Boolean).join(" · ")}
                 </div>
               </div>
-              {u.invited_at ? (
-                <span className="badge text-bg-success" title={new Date(u.invited_at).toLocaleString("en-GB")}>
-                  Email sent
+              <div className="text-end small">
+                <span className={`badge ${Number(u.active) ? "text-bg-success" : "text-bg-secondary"}`}>
+                  {Number(u.active) ? "Active" : "Inactive"}
                 </span>
-              ) : (
-                <span className="badge text-bg-light">Not invited yet</span>
-              )}
+                <div className="text-body-secondary">
+                  {u.invited_at
+                    ? `Email sent ${new Date(u.invited_at).toLocaleDateString("en-GB")}`
+                    : Number(u.active)
+                      ? "Already has a login"
+                      : "Not invited yet"}
+                </div>
+              </div>
+              {Number(u.active) ? (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-warning"
+                  disabled={busy}
+                  onClick={() => deactivate(u)}
+                >
+                  Deactivate
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="btn btn-sm btn-outline-danger"
