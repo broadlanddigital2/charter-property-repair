@@ -238,8 +238,12 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
         />
       </div>
       <div className="card-footer bg-body d-flex flex-wrap align-items-center justify-content-end gap-2">
-        {missing.length > 0 && (
-          <span className="small text-body-secondary me-auto">To activate, add {missing.join(", ")}.</span>
+        {users.length === 0 ? (
+          <span className="small text-body-secondary me-auto">Add or attach a claim user to activate this claim.</span>
+        ) : (
+          missing.length > 0 && (
+            <span className="small text-body-secondary me-auto">To activate, add {missing.join(", ")}.</span>
+          )
         )}
         <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
           Close
@@ -247,14 +251,20 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
         <button type="button" className="btn btn-outline-primary" disabled={saving} onClick={() => save()}>
           {saving ? "Saving…" : "Save"}
         </button>
-        <button
-          type="button"
-          className="btn btn-success text-white"
-          disabled={activating || saving || missing.length > 0}
-          onClick={activate}
-        >
-          {activating ? "Sending…" : claim.activated_at ? "Re-send sign-in email" : "Activate claim & email user"}
-        </button>
+        {users.length > 0 && (
+          <button
+            type="button"
+            className="btn btn-success text-white"
+            disabled={activating || saving || missing.length > 0}
+            onClick={activate}
+          >
+            {activating
+              ? "Sending…"
+              : claim.activated_at
+                ? "Re-send sign-in email"
+                : `Activate claim & email ${users.length === 1 ? "user" : `${users.length} users`}`}
+          </button>
+        )}
       </div>
     </div>
   );
