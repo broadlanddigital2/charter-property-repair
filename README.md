@@ -162,3 +162,34 @@ product's rooms (`products.rooms_manual`), which rules then leave alone.
 - Admin › Rooms: room counts and the editable rules matrix.
 - Admin › Products: room filter chips (incl. "No room"), room badges, per-product override.
 - RPCs: `api_rooms`, `api_set_product_rooms`, `api_products_page(..., p_room)`; product JSON carries `rooms`.
+
+## Claims workflow (added Nov 2026)
+1. **ServiceM8** — claim raised as a job against the client company; hourly sync brings it in.
+2. **Admin › Claims** (tabs: Not activated / Activated / Open / Ordered / All; open = not Completed/Unsuccessful in ServiceM8):
+   set **budget** (£, local — sync never overwrites), tick **rooms** (`job_rooms`: quantity + notes),
+   add **claim users** (search existing contacts or create new → `contacts` type `CLAIMANT` under the claim's company,
+   linked via `job_contacts`). **Activate claim & email user** (only shown once a user is attached) →
+   `admin-users` `activate_claim`: creates a passwordless login, marks the contact active, sends the
+   Supabase *Magic Link* email (link to `<portal>/claim-login` + 6-digit code), sets `jobs.activated_at`.
+   Active users show a **Deactivate** button.
+3. **Portal** — claim users sign in at `/claim-login` (email → 6-digit code; staff keep passwords).
+   Dashboard → `/claim?job=` (rooms with progress + budget bar) → `/claim-room` (the room's **items**
+   as steps; search that item's products; add with quantity; next item) → `/claim?job=&review=1` → Place order.
+4. **Order** — `place-order` takes that claim's lines (with quantity, room, item) and posts the ServiceM8 note
+   (disabled on staging).
+
+**Room items**: each product in a room has an `item` (`product_rooms.item`) = the tagging rule's
+`room_rules.item_name` (editable in Admin › Rooms) or a grouping of its category (`private.default_item`).
+**Selections** are `basket_lines` with `job_id`, `room_id`, `item`, `quantity`; budget and orders are per claim
+and count quantities. RPCs: `api_claim_view`, `api_item_products`, `api_set_selection`, `api_claim_selection`;
+admin: `api_claims_page`, `api_set_claim`, `api_claim_add_user`, `api_claim_remove_user`, `api_search_contacts`.
+
+**Access**: a claimant sees only claims linked in `job_contacts`, their own basket (`baskets.contact_id`) and those
+claims' orders; company users share the company basket (`contact_id is null`). Policies use per-query
+`(select private.is_admin())`-style checks — a per-row function made a full jobs scan take 4s.
+
+**Email template**: paste `supabase/templates/magic_link.html` into Authentication › Emails › *Magic Link* and
+*Confirm signup* (the CI token can't change auth config). Check Site URL = portal URL and SMTP rate limits.
+
+**Test data (staging only)**: company "ZZ TEST – Claims Sandbox (not in ServiceM8)" with claims TEST-001/TEST-002;
+`justin@broadlanddigital.co.uk` is attached to it. Delete both at cutover.
