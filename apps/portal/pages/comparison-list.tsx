@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 
 import withAuth from "@/hoc/withAuth";
 import DashboardLayout from "@/components/DashboardLayout";
-import PageHeader from "@/components/PageHeader";
+import PageHeader, { bannerButtonGhost } from "@/components/PageHeader";
 import useCompare from "@/hooks/useCompare";
 import { errorLogger } from "@/services/axiosService";
 import { getAllProducts, getClaimSelection, setSelection } from "@/services/requestService";
@@ -103,10 +103,10 @@ const ComparisonPage = () => {
         <PageHeader
           back={back}
           title="Compare products"
-          subtitle={products.length ? "Differences are highlighted." : undefined}
+          subtitle={products.length ? "Rows marked • are where the products differ." : undefined}
           actions={
             products.length ? (
-              <button type="button" onClick={clear} className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:border-[#6D21C7]">
+              <button type="button" onClick={clear} className={bannerButtonGhost}>
                 Clear comparison
               </button>
             ) : undefined
@@ -140,15 +140,18 @@ const ComparisonPage = () => {
                     const href = `/product?guid=${p.guid}${inClaim ? `&job=${job}&room=${room}&item=${encodeURIComponent(item)}` : ""}`;
                     const qty = selected[p.guid] ?? 0;
                     return (
-                      <th key={p.guid} className="p-4 text-left font-normal">
-                        <div className="relative">
+                      <th key={p.guid} className="p-4 text-left font-normal align-top" style={{ height: 1 }}>
+                        <div className="relative flex h-full flex-col">
                           <button
                             type="button"
                             onClick={() => remove(p.guid)}
-                            className="absolute right-0 top-0 grid h-6 w-6 place-items-center rounded-full bg-gray-100 text-xs hover:bg-gray-200"
+                            className="absolute right-1 top-1 z-10 grid h-10 w-10 place-items-center rounded-full bg-white text-gray-600 shadow ring-1 ring-gray-200 hover:bg-gray-50 hover:text-gray-900"
                             aria-label={`Remove ${p.name} from comparison`}
+                            title="Remove from comparison"
                           >
-                            ✕
+                            <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden>
+                              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            </svg>
                           </button>
                           <Link href={href} className="block h-36 rounded-lg bg-[#F3ECFB] p-2" tabIndex={-1} aria-hidden>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -159,14 +162,14 @@ const ComparisonPage = () => {
                           </Link>
                           <p className="mt-1 text-xs text-gray-500">{[p.supplier?.name, p.sku].filter(Boolean).join(" · ")}</p>
                           <span
-                            className={`mt-2 inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                            className={`mt-2 self-start inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                               Number(p.in_budget) ? "bg-[#D1FADF] text-[#027A48]" : "bg-[#6D21C7] text-white"
                             }`}
                           >
                             {Number(p.in_budget) ? "Included in budget" : "Extra cost"}
                           </span>
                           {inClaim && (
-                            <div className="mt-3">
+                            <div className="mt-auto pt-4">
                               {qty === 0 ? (
                                 <button
                                   type="button"
@@ -177,7 +180,7 @@ const ComparisonPage = () => {
                                   Add to {item}
                                 </button>
                               ) : (
-                                <div className="flex items-center gap-2 text-sm">
+                                <div className="flex h-9 items-center gap-2 text-sm">
                                   <span className="font-semibold text-[#027A48]">Added × {qty}</span>
                                   <button type="button" className="ml-auto underline text-red-600" disabled={busy === p.guid} onClick={() => add(p, 0)}>
                                     Remove
@@ -196,12 +199,13 @@ const ComparisonPage = () => {
                 {rows.map((r) => {
                   const diff = differs(r.values);
                   return (
-                    <tr key={r.label} className={`border-t align-top ${diff ? "bg-[#6D21C7]/[0.04]" : ""}`}>
-                      <th scope="row" className="p-3 text-left font-medium text-gray-500">
+                    <tr key={r.label} className="border-t border-white align-top odd:bg-[#F7F2FC] even:bg-[#EFE6FA]">
+                      <th scope="row" className="p-3 text-left font-semibold text-[#4B1590] bg-[#E6D8F7]">
                         {r.label}
+                        {diff && <span className="ml-1 text-[#6D21C7]" title="These differ">•</span>}
                       </th>
                       {r.values.map((v, i) => (
-                        <td key={i} className={`p-3 break-words ${diff ? "font-medium" : ""}`}>
+                        <td key={i} className={`p-3 break-words ${diff ? "font-semibold" : "text-gray-700"}`}>
                           {v || <span className="text-gray-400">—</span>}
                         </td>
                       ))}

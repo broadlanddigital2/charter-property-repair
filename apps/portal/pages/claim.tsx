@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import PageHeader from "@/components/PageHeader";
+import PageHeader, { bannerButton } from "@/components/PageHeader";
 import withAuth from "@/hoc/withAuth";
 import { useStores } from "@/hooks/useStores";
 import { errorLogger } from "@/services/axiosService";
@@ -80,21 +80,17 @@ const ClaimPage = () => {
       <div className="max-w-[1280px] mx-auto px-4 py-8">
         <PageHeader
           back={reviewing ? { href: `/claim?job=${claim.guid}`, label: "Back to rooms" } : { href: "/dashboard", label: "My claims" }}
-          eyebrow={
-            <>
-              Claim {claim.job_number}
-              {claim.company?.name ? ` · ${claim.company.name}` : ""}
-              {claim.company ? ` · Price band ${claim.company.price_band ?? "not set"}` : ""}
-            </>
-          }
+          chips={[
+            `Claim ${claim.job_number ?? ""}`,
+            claim.company?.name,
+            claim.company ? `Price band ${claim.company.price_band ?? "not set"}` : null,
+            claim.ordered ? "Ordered" : null,
+          ]}
           title={reviewing ? "Review your selections" : "Choose a room"}
-          subtitle={address}
+          subtitle={address || undefined}
           actions={
             !claim.ordered && lines.length > 0 && !reviewing ? (
-              <Link
-                href={`/claim?job=${claim.guid}&review=1`}
-                className="rounded-md bg-[#31B75C] text-white px-5 py-3 font-semibold hover:bg-[#2a9e4f]"
-              >
+              <Link href={`/claim?job=${claim.guid}&review=1`} className={bannerButton}>
                 Review & place order ({lines.length})
               </Link>
             ) : undefined
@@ -145,78 +141,140 @@ const ClaimPage = () => {
             </div>
           )
         ) : (
-          <div>
-            {lines.length === 0 ? (
-              <p className="text-gray-600">You haven&apos;t added anything yet.</p>
-            ) : (
-              Array.from(grouped.entries()).map(([slug, room]) => (
-                <section key={slug} className="mb-8">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold">{room.name}</h2>
-                    {!claim.ordered && (
-                      <Link href={`/claim-room?job=${claim.guid}&room=${slug}`} className="text-sm underline">
-                        Edit
-                      </Link>
-                    )}
-                  </div>
-                  {Array.from(room.items.entries()).map(([item, ls]) => (
-                    <div key={item} className="mt-3 bg-white rounded-[11px] shadow-sm">
-                      <p className="px-4 pt-3 text-sm font-semibold text-gray-500">{item}</p>
-                      <ul>
-                        {ls.map((l) => (
-                          <li key={l.product.guid} className="flex items-center gap-4 px-4 py-3 border-t first:border-t-0">
-                            <span className="font-semibold w-10 text-right">{l.quantity}×</span>
-                            <Link
-                              href={`/product?guid=${l.product.guid}&job=${claim.guid}&room=${l.room}&item=${encodeURIComponent(l.item)}`}
-                              className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#F3ECFB] p-1 flex items-center justify-center"
-                              aria-hidden
-                              tabIndex={-1}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={l.product.image || "/images/placeholder.jpg"}
-                                alt=""
-                                loading="lazy"
-                                className="block h-full w-full object-contain"
-                                onError={(e) => {
-                                  const img = e.currentTarget;
-                                  if (!img.src.endsWith("/images/placeholder.jpg")) img.src = "/images/placeholder.jpg";
-                                }}
-                              />
-                            </Link>
-                            <span className="flex-1">
-                              {l.product.name}
-                              <span className="block text-xs text-gray-500">{l.product.sku}</span>
-                            </span>
-                            <span
-                              className={`text-xs rounded-full px-2 py-0.5 ${
-                                Number(l.product.in_budget) ? "bg-[#D1FADF] text-[#027A48]" : "bg-[#6D20C7] text-white"
-                              }`}
-                            >
-                              {Number(l.product.in_budget) ? "Included" : "Extra cost"}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </section>
-              ))
-            )}
-            <div className="flex flex-wrap justify-between gap-4 mt-6">
-              <Link href={`/claim?job=${claim.guid}`} className="rounded-md border-2 border-[#6D20C7] px-5 py-3 font-semibold">
-                ← Back to rooms
-              </Link>
-              {!claim.ordered && lines.length > 0 && (
-                <button
-                  type="button"
-                  onClick={placeOrder}
-                  className="rounded-md bg-[#31B75C] text-white px-6 py-3 font-semibold hover:bg-[#3d9d5b]"
-                >
-                  Place order
-                </button>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-6">
+              {lines.length === 0 ? (
+                <div className="rounded-xl bg-white shadow-sm p-8 text-center text-gray-600">
+                  You haven&apos;t added anything yet.{" "}
+                  <Link href={`/claim?job=${claim.guid}`} className="underline">
+                    Choose a room
+                  </Link>{" "}
+                  to get started.
+                </div>
+              ) : (
+                Array.from(grouped.entries()).map(([slug, room]) => {
+                  const count = Array.from(room.items.values()).reduce((n, ls) => n + ls.reduce((m, l) => m + l.quantity, 0), 0);
+                  return (
+                    <section key={slug} className="overflow-hidden rounded-xl bg-white shadow-sm">
+                      <header className="flex flex-wrap items-center gap-3 border-b bg-[#F7F2FC] px-5 py-4">
+                        <h2 className="text-lg font-bold text-[#4B1590]">{room.name}</h2>
+                        <span className="rounded-full bg-white px-3 py-0.5 text-xs font-semibold text-[#6D21C7] ring-1 ring-[#E6D8F7]">
+                          {count} item{count === 1 ? "" : "s"}
+                        </span>
+                        {!claim.ordered && (
+                          <Link
+                            href={`/claim-room?job=${claim.guid}&room=${slug}`}
+                            className="ml-auto rounded-md border border-[#6D21C7] px-3 py-1.5 text-sm font-semibold text-[#6D21C7] hover:bg-[#6D21C7] hover:text-white"
+                          >
+                            Edit room
+                          </Link>
+                        )}
+                      </header>
+                      {Array.from(room.items.entries()).map(([item, ls]) => (
+                        <div key={item} className="border-b last:border-b-0">
+                          <p className="px-5 pt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">{item}</p>
+                          <ul className="px-3 pb-3">
+                            {ls.map((l) => (
+                              <li key={l.product.guid} className="flex items-center gap-4 rounded-lg px-2 py-2 hover:bg-[#F7F2FC]">
+                                <Link
+                                  href={`/product?guid=${l.product.guid}&job=${claim.guid}&room=${l.room}&item=${encodeURIComponent(l.item)}`}
+                                  className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#F3ECFB] p-1 flex items-center justify-center"
+                                  aria-hidden
+                                  tabIndex={-1}
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={l.product.image || "/images/placeholder.jpg"}
+                                    alt=""
+                                    loading="lazy"
+                                    className="block h-full w-full object-contain"
+                                    onError={(e) => {
+                                      const img = e.currentTarget;
+                                      if (!img.src.endsWith("/images/placeholder.jpg")) img.src = "/images/placeholder.jpg";
+                                    }}
+                                  />
+                                </Link>
+                                <div className="min-w-0 flex-1">
+                                  <Link
+                                    href={`/product?guid=${l.product.guid}&job=${claim.guid}&room=${l.room}&item=${encodeURIComponent(l.item)}`}
+                                    className="font-medium leading-snug hover:text-[#6D21C7]"
+                                  >
+                                    {l.product.name}
+                                  </Link>
+                                  <p className="mt-0.5 text-xs text-gray-500">
+                                    {[l.product.supplier?.name, l.product.sku].filter(Boolean).join(" · ")}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`hidden sm:inline text-[11px] font-semibold rounded-full px-2 py-0.5 ${
+                                    Number(l.product.in_budget) ? "bg-[#D1FADF] text-[#027A48]" : "bg-[#6D21C7] text-white"
+                                  }`}
+                                >
+                                  {Number(l.product.in_budget) ? "Included" : "Extra cost"}
+                                </span>
+                                <span className="grid h-9 min-w-[2.75rem] place-items-center rounded-full bg-[#6D21C7]/10 px-3 text-sm font-bold text-[#6D21C7]">
+                                  ×{l.quantity}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </section>
+                  );
+                })
               )}
             </div>
+
+            {/* Summary */}
+            <aside className="lg:sticky lg:top-4 self-start">
+              <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+                <div className="bg-gradient-to-br from-[#6D21C7] to-[#4B1590] px-5 py-4 text-white">
+                  <p className="text-sm text-white/80">Order summary</p>
+                  <p className="text-lg font-bold">Claim {claim.job_number}</p>
+                </div>
+                <dl className="divide-y px-5 text-sm">
+                  <div className="flex justify-between py-3">
+                    <dt className="text-gray-500">Rooms</dt>
+                    <dd className="font-semibold">{grouped.size}</dd>
+                  </div>
+                  <div className="flex justify-between py-3">
+                    <dt className="text-gray-500">Products</dt>
+                    <dd className="font-semibold">{lines.length}</dd>
+                  </div>
+                  <div className="flex justify-between py-3">
+                    <dt className="text-gray-500">Total quantity</dt>
+                    <dd className="font-semibold">{lines.reduce((n, l) => n + l.quantity, 0)}</dd>
+                  </div>
+                  <div className="flex justify-between py-3">
+                    <dt className="text-gray-500">Extra cost items</dt>
+                    <dd className="font-semibold">{lines.filter((l) => !Number(l.product.in_budget)).length}</dd>
+                  </div>
+                </dl>
+                <div className="space-y-3 p-5 pt-2">
+                  {!claim.ordered && lines.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={placeOrder}
+                      className="w-full rounded-md bg-[#31B75C] py-3 font-semibold text-white hover:bg-[#2a9e4f]"
+                    >
+                      Place order
+                    </button>
+                  )}
+                  <Link
+                    href={`/claim?job=${claim.guid}`}
+                    className="block w-full rounded-md border border-gray-300 py-2.5 text-center text-sm font-semibold hover:border-[#6D21C7]"
+                  >
+                    Back to rooms
+                  </Link>
+                  {!claim.ordered && (
+                    <p className="text-xs text-gray-500">
+                      Once placed, your order goes to the team handling your claim and can&apos;t be changed here.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </aside>
           </div>
         )}
       </div>

@@ -32,18 +32,27 @@ const CompareBar = ({ compareHref }: { compareHref: string }) => {
         <span className="text-sm font-semibold">
           Compare ({ids.length}/{COMPARE_MAX})
         </span>
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex gap-3 overflow-x-auto py-1">
           {products.map((p) => (
-            <div key={p.guid} className="relative h-12 w-12 shrink-0 rounded-md bg-[#F3ECFB] p-1" title={p.name}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.image || "/images/placeholder.jpg"} alt="" className="block h-full w-full object-contain" />
+            <div
+              key={p.guid}
+              className="flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white py-1 pl-1 pr-1.5"
+              title={p.name}
+            >
+              <div className="h-10 w-10 rounded-md bg-[#F3ECFB] p-0.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.image || "/images/placeholder.jpg"} alt="" className="block h-full w-full object-contain" />
+              </div>
+              <span className="hidden md:block max-w-[9rem] truncate text-xs">{p.name}</span>
               <button
                 type="button"
                 onClick={() => remove(p.guid)}
-                className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-gray-700 text-[10px] text-white"
+                className="grid h-7 w-7 place-items-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 aria-label={`Remove ${p.name} from comparison`}
               >
-                ✕
+                <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden>
+                  <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
               </button>
             </div>
           ))}
