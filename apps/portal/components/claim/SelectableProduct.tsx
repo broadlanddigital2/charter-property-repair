@@ -24,19 +24,19 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
       }`}
     >
       <span
-        className={`absolute top-3 left-3 z-10 text-xs font-semibold px-3 py-1 rounded-full shadow ${
+        className={`absolute top-2 left-2 z-10 text-[11px] font-semibold px-2 py-0.5 rounded-full shadow ${
           Number(product.in_budget) ? "bg-[#D1FADF] text-[#027A48]" : "bg-[#6D20C7] text-white"
         }`}
       >
         {Number(product.in_budget) ? "Included in budget" : "Extra cost"}
       </span>
       {selected && (
-        <span className="absolute top-3 right-3 z-10 text-xs font-semibold px-3 py-1 rounded-full bg-[#6D20C7] text-white">
+        <span className="absolute top-2 right-2 z-10 text-[11px] font-semibold px-3 py-1 rounded-full bg-[#6D20C7] text-white">
           Added × {qty}
         </span>
       )}
 
-      <div className="bg-[#F3ECFB] h-[190px] grid place-items-center p-3">
+      <div className="bg-[#F3ECFB] h-[120px] grid place-items-center p-2 pt-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imgOk && product.image ? product.image : "/images/placeholder.jpg"}
@@ -47,14 +47,12 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
         />
       </div>
 
-      <div className="p-4 flex flex-col gap-1 flex-1">
-        <p className="font-semibold leading-snug line-clamp-2" title={product.name}>
-          {product.name}
-        </p>
+      <div className="px-3 pt-3 pb-2 flex flex-col gap-1 flex-1">
+        <p className="text-sm font-semibold leading-snug break-words">{product.name}</p>
         <p className="text-xs text-gray-500">
           {[product.supplier?.name, product.sku].filter(Boolean).join(" · ")}
         </p>
-        <p className="text-lg font-bold mt-auto pt-2">{product.price === null ? "—" : gbp(product.price)}</p>
+        <p className="text-base font-bold mt-auto pt-1">{product.price === null ? "—" : gbp(product.price)}</p>
         <Link
           href={`/product?guid=${product.guid}`}
           target="_blank"
@@ -64,7 +62,7 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
         </Link>
       </div>
 
-      <div className="px-4 pb-4">
+      <div className="px-3 pb-3">
         {!selected ? (
           <button
             type="button"

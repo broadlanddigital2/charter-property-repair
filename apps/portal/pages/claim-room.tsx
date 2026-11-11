@@ -218,7 +218,7 @@ const ClaimRoomPage = () => {
                 </p>
 
                 <div
-                  className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
+                  className="mt-4 grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
                   style={{ opacity: loadingProducts ? 0.6 : 1 }}
                 >
                   {products.map((p) => (
