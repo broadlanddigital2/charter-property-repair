@@ -246,3 +246,6 @@ export type TClaimSelectionLine = {
   quantity: number;
   product: TProduct;
 };
+
+export type TItemFilter = { key: string; values: { value: string; count: number }[] };
+export type TFilterSelection = Record<string, string[]>;

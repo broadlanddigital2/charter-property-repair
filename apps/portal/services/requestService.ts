@@ -26,6 +26,8 @@ import {
   TClaimSelectionLine,
   TClaimView,
   TItemProduct,
+  TFilterSelection,
+  TItemFilter,
 } from "@/types/api";
 import { apiError, invoke, requireSession, supabase, unwrap } from "./supabase";
 
@@ -300,10 +302,13 @@ export const getClaimView = async (jobGUID: string) =>
   unwrap(await supabase.rpc("api_claim_view", { p_job: jobGUID })) as TClaimView;
 
 export const getItemProducts = async (
-  jobGUID: string, room: string, item: string, search = "", page = 1, perPage = 24
+  jobGUID: string, room: string, item: string, search = "", page = 1, perPage = 24,
+  filters: TFilterSelection = {}
 ) => {
+  const active = Object.fromEntries(Object.entries(filters).filter(([, v]) => v.length));
   const res = unwrap(await supabase.rpc("api_item_products", {
     p_job: jobGUID, p_room: room, p_item: item, p_search: search || null, p_page: page, p_per_page: perPage,
+    p_filters: Object.keys(active).length ? active : null,
   })) as { total: number; data: TItemProduct[] };
   return { products: res.data, total: res.total };
 };
@@ -316,3 +321,6 @@ export const setSelection = async (jobGUID: string, room: string, item: string, 
 
 export const getClaimSelection = async (jobGUID: string) =>
   unwrap(await supabase.rpc("api_claim_selection", { p_job: jobGUID })) as TClaimSelectionLine[];
+
+export const getItemFilters = async (jobGUID: string, room: string, item: string) =>
+  unwrap(await supabase.rpc("api_item_filters", { p_job: jobGUID, p_room: room, p_item: item })) as TItemFilter[];

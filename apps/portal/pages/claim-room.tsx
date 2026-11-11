@@ -6,12 +6,13 @@ import { toast } from "react-toastify";
 
 import DashboardLayout from "@/components/DashboardLayout";
 import SelectableProduct from "@/components/claim/SelectableProduct";
+import FilterBar from "@/components/claim/FilterBar";
 import withAuth from "@/hoc/withAuth";
 import { useStores } from "@/hooks/useStores";
 import useDebounce from "@/hooks/useDebounce";
 import { errorLogger } from "@/services/axiosService";
-import { getClaimView, getItemProducts, setSelection } from "@/services/requestService";
-import { TClaimView, TItemProduct } from "@/types/api";
+import { getClaimView, getItemFilters, getItemProducts, setSelection } from "@/services/requestService";
+import { TClaimView, TFilterSelection, TItemFilter, TItemProduct } from "@/types/api";
 
 const PER_PAGE = 24; // products per lazy-loaded block
 
@@ -32,6 +33,9 @@ const ClaimRoomPage = () => {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const q = useDebounce(search, 350);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [filters, setFilters] = useState<TItemFilter[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState<TFilterSelection>({});
+  const filterKey = JSON.stringify(selectedFilters);
 
   const room = claim?.rooms.find((r) => r.slug === roomSlug);
   const items = room?.items ?? [];
@@ -61,9 +65,15 @@ const ClaimRoomPage = () => {
   useEffect(() => {
     setPage(1);
     setSearch("");
-  }, [current?.item]);
+    setSelectedFilters({});
+    setFilters([]);
+    if (!jobGUID || !roomSlug || !current) return;
+    getItemFilters(jobGUID, roomSlug, current.item)
+      .then(setFilters)
+      .catch((e) => errorLogger(e, "Couldn't load filters"));
+  }, [current?.item]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => setPage(1), [q]);
+  useEffect(() => setPage(1), [q, filterKey]);
 
   useEffect(() => {
     if (!jobGUID || !roomSlug || !current) return;
@@ -71,7 +81,7 @@ const ClaimRoomPage = () => {
     (async () => {
       try {
         setLoadingProducts(true);
-        const res = await getItemProducts(jobGUID, roomSlug, current.item, q.trim(), page, PER_PAGE);
+        const res = await getItemProducts(jobGUID, roomSlug, current.item, q.trim(), page, PER_PAGE, selectedFilters);
         if (live) {
           // page 1 replaces the list; later pages append (lazy loading as you scroll)
           setProducts((prev) => (page === 1 ? res.products : [...prev, ...res.products.filter((p) => !prev.some((x) => x.guid === p.guid))]));
@@ -86,7 +96,7 @@ const ClaimRoomPage = () => {
     return () => {
       live = false;
     };
-  }, [jobGUID, roomSlug, current?.item, q, page]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jobGUID, roomSlug, current?.item, q, page, filterKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // load the next block of products when the user scrolls near the end of the grid
   const hasMore = products.length < total;
@@ -229,7 +239,8 @@ const ClaimRoomPage = () => {
                     aria-label={`Search ${current.item}`}
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
+                <FilterBar filters={filters} selected={selectedFilters} onChange={setSelectedFilters} />
+                <p className="text-sm text-gray-500 mt-2">
                   {total.toLocaleString("en-GB")} products · items included in your budget are shown first
                 </p>
 
@@ -248,7 +259,7 @@ const ClaimRoomPage = () => {
                   ))}
                 </div>
                 {!loadingProducts && products.length === 0 && (
-                  <p className="mt-6 text-gray-600">No products match that search.</p>
+                  <p className="mt-6 text-gray-600">No products match — try removing a filter or changing your search.</p>
                 )}
 
                 <div ref={sentinelRef} aria-hidden className="h-1" />
