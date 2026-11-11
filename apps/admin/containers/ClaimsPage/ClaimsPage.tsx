@@ -16,7 +16,8 @@ import ClaimSetup from "./ClaimSetup";
 const PER_PAGE = 20;
 
 const FILTERS: { value: TClaimFilter; label: string }[] = [
-  { value: "setup", label: "Needs set-up" },
+  { value: "setup", label: "Not activated" },
+  { value: "active", label: "Activated" },
   { value: "open", label: "Open" },
   { value: "ordered", label: "Ordered" },
   { value: "all", label: "All" },
@@ -112,7 +113,7 @@ const ClaimsPage = () => {
 
           {!loading && claims.length === 0 ? (
             <div className="card-body text-body-secondary small">
-              {filter === "setup" && !q ? "Every open claim has its budget and rooms set." : "No claims found."}
+              {filter === "setup" && !q ? "Every open claim has been activated." : "No claims found."}
             </div>
           ) : (
             <div className="table-responsive" style={{ opacity: loading ? 0.6 : 1 }}>
@@ -123,6 +124,7 @@ const ClaimsPage = () => {
                     <th>Customer / property</th>
                     <th className="text-end">Budget</th>
                     <th>Rooms</th>
+                    <th>Users</th>
                     <th>Status</th>
                     <th style={{ width: 90 }}></th>
                   </tr>
@@ -156,7 +158,15 @@ const ClaimsPage = () => {
                           <span className="badge text-bg-warning">No rooms</span>
                         )}
                       </td>
+                      <td className="small" style={{ maxWidth: 180 }}>
+                        {c.users?.length ? (
+                          <span className="text-truncate d-block">{c.users.map((u) => u.name).join(", ")}</span>
+                        ) : (
+                          <span className="badge text-bg-warning">None</span>
+                        )}
+                      </td>
                       <td className="small text-nowrap">
+                        {c.activated_at && <span className="badge text-bg-success me-1">Activated</span>}
                         {c.status ?? "—"}
                         {c.orders > 0 && <div className="text-body-secondary">{c.orders} ordered</div>}
                       </td>

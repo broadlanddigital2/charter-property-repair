@@ -4,8 +4,9 @@ import { toast } from "react-toastify";
 
 import { ROOMS } from "@/components/RoomBadges";
 import { errorLogger } from "@/services/axiosService";
-import { setClaim } from "@/services/requestService";
-import { TClaim, TClaimRoom } from "@/types/api";
+import { activateClaim, setClaim } from "@/services/requestService";
+import ClaimUsers from "./ClaimUsers";
+import { TClaim, TClaimRoom, TClaimUser } from "@/types/api";
 
 type Props = {
   claim: TClaim;
@@ -18,10 +19,13 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
   const [budget, setBudget] = useState<string>("");
   const [rooms, setRooms] = useState<TClaimRoom[]>([]);
   const [saving, setSaving] = useState(false);
+  const [users, setUsers] = useState<TClaimUser[]>([]);
+  const [activating, setActivating] = useState(false);
 
   useEffect(() => {
     setBudget(claim.budget === null || claim.budget === undefined ? "" : String(claim.budget));
     setRooms(claim.rooms.map((r) => ({ slug: r.slug, quantity: r.quantity, notes: r.notes })));
+    setUsers(claim.users ?? []);
   }, [claim]);
 
   const roomOf = (slug: string) => rooms.find((r) => r.slug === slug);
@@ -36,22 +40,62 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
   const patch = (slug: string, change: Partial<TClaimRoom>) =>
     setRooms((list) => list.map((r) => (r.slug === slug ? { ...r, ...change } : r)));
 
-  const save = async () => {
+  const save = async (quiet = false): Promise<TClaim | null> => {
     const value = budget.trim() === "" ? null : Math.round(Number(budget));
     if (value !== null && (!Number.isFinite(value) || value < 0)) {
       toast.error("Budget must be a positive number of pounds");
-      return;
+      return null;
     }
     try {
       setSaving(true);
       const ordered = ROOMS.map((r) => roomOf(r.slug)).filter(Boolean) as TClaimRoom[];
       const res = await setClaim(claim.guid, value, ordered);
-      onSaved({ ...claim, budget: res.budget, rooms: res.rooms });
-      toast.success(`Claim ${claim.job_number ?? ""} saved`);
+      const saved = { ...claim, budget: res.budget, rooms: res.rooms, users };
+      onSaved(saved);
+      if (!quiet) toast.success(`Claim ${claim.job_number ?? ""} saved`);
+      return saved;
     } catch (error) {
       errorLogger(error, "Failed to save the claim");
+      return null;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const missing = [
+    budget.trim() === "" && "a budget",
+    rooms.length === 0 && "at least one room",
+    users.length === 0 && "at least one claim user",
+  ].filter(Boolean) as string[];
+
+  const activate = async () => {
+    if (missing.length) {
+      toast.error(`Add ${missing.join(", ")} before activating.`);
+      return;
+    }
+    const again = !!claim.activated_at;
+    if (!window.confirm(
+      again
+        ? `Re-send the sign-in email to ${users.length} user${users.length === 1 ? "" : "s"}?`
+        : `Activate claim ${claim.job_number ?? ""} and email ${users.map((u) => u.email).join(", ")}?`
+    )) return;
+    const saved = await save(true);
+    if (!saved) return;
+    try {
+      setActivating(true);
+      const res = await activateClaim(claim.guid);
+      if (res.failed?.length) toast.warn(res.message ?? "Some emails failed");
+      if (res.sent?.length) toast.success(`Claim activated — email sent to ${res.sent.join(", ")}`);
+      const now = new Date().toISOString();
+      onSaved({
+        ...saved,
+        activated_at: saved.activated_at ?? now,
+        users: users.map((u) => (res.sent?.includes(u.email.toLowerCase()) ? { ...u, active: 1, invited_at: now } : u)),
+      });
+    } catch (error) {
+      errorLogger(error, "Failed to activate the claim");
+    } finally {
+      setActivating(false);
     }
   };
 
@@ -62,6 +106,13 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
       <div className="card-header bg-body d-flex flex-wrap align-items-center gap-2">
         <span className="fs-5 fw-semibold">Claim {claim.job_number ?? "—"}</span>
         {claim.status && <span className="badge text-bg-light">{claim.status}</span>}
+        {claim.activated_at ? (
+          <span className="badge text-bg-success" title={new Date(claim.activated_at).toLocaleString("en-GB")}>
+            Activated
+          </span>
+        ) : (
+          <span className="badge text-bg-secondary">Not activated</span>
+        )}
         {claim.orders > 0 && (
           <span className="badge text-bg-warning">
             {claim.orders} order{claim.orders === 1 ? "" : "s"} placed
@@ -125,7 +176,7 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
         </div>
 
         {rooms.length > 0 && (
-          <div className="table-responsive mt-3">
+          <div className="table-responsive mt-3 mb-4">
             <table className="table table-sm align-middle mb-0">
               <thead className="table-light">
                 <tr>
@@ -176,13 +227,33 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
             </table>
           </div>
         )}
+        <hr className="my-4" />
+        <ClaimUsers
+          claimGUID={claim.guid}
+          users={users}
+          onChange={(u) => {
+            setUsers(u);
+            onSaved({ ...claim, users: u });
+          }}
+        />
       </div>
-      <div className="card-footer bg-body d-flex justify-content-end gap-2">
+      <div className="card-footer bg-body d-flex flex-wrap align-items-center justify-content-end gap-2">
+        {missing.length > 0 && (
+          <span className="small text-body-secondary me-auto">To activate, add {missing.join(", ")}.</span>
+        )}
         <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
-          Cancel
+          Close
         </button>
-        <button type="button" className="btn btn-primary" disabled={saving} onClick={save}>
-          {saving ? "Saving…" : "Save claim"}
+        <button type="button" className="btn btn-outline-primary" disabled={saving} onClick={() => save()}>
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button
+          type="button"
+          className="btn btn-success text-white"
+          disabled={activating || saving || missing.length > 0}
+          onClick={activate}
+        >
+          {activating ? "Sending…" : claim.activated_at ? "Re-send sign-in email" : "Activate claim & email user"}
         </button>
       </div>
     </div>

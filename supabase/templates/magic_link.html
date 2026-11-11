@@ -1,0 +1,16 @@
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;color:#242424">
+  <h2 style="color:#6D21C7;margin-bottom:4px">Charter Property Repair</h2>
+  <p style="margin-top:0;color:#666">Your claim portal</p>
+  <p>Hello,</p>
+  <p>Your claim is ready. Use the button below to open the portal, choose the replacement products for the rooms on your claim, and place your order.</p>
+  <p style="margin:28px 0">
+    <a href="{{ .SiteURL }}/claim-login?email={{ .Email }}"
+       style="background:#6D21C7;color:#fff;text-decoration:none;padding:12px 22px;border-radius:6px;display:inline-block">
+      Open my claim
+    </a>
+  </p>
+  <p>When asked, enter this email address. If you are asked for a sign-in code, use:</p>
+  <p style="font-size:30px;letter-spacing:8px;font-weight:bold;margin:12px 0 24px">{{ .Token }}</p>
+  <p style="color:#666;font-size:13px">The code expires in 1 hour. You can request a new one from the sign-in page at any time.
+     If you weren't expecting this email you can ignore it.</p>
+</div>

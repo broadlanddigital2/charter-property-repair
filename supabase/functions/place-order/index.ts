@@ -1,6 +1,6 @@
 // POST { job_guid }  (Authorization: Bearer <user JWT>)
 // Replaces legacy POST /api/order:
-//   1. builds "Order lines: ..." note from the company's basket
+//   1. builds "Order lines: ..." note from the caller's basket (company basket, or a claim user's own)
 //   2. posts it to the job in ServiceM8 (only when SERVICEM8_NOTES_ENABLED=true)
 //   3. creates the order + snapshotted lines and clears the basket
 import { callerContact, config, corsHeaders, json, serviceClient } from "../_shared/http.ts";
@@ -20,15 +20,27 @@ Deno.serve(async (req) => {
 
     const { data: job } = await admin
       .from("jobs").select("id, company_id, service_mate_uuid").eq("id", job_guid).maybeSingle();
-    if (!job || job.company_id !== contact.company_id) {
+    const isClaimant = String(contact.type ?? "").toUpperCase() === "CLAIMANT";
+    let allowed = !!job && job.company_id === contact.company_id && !isClaimant;
+    if (job && isClaimant) {
+      // claim users may only order on the claims they are linked to
+      const { data: link } = await admin
+        .from("job_contacts").select("job_id").eq("job_id", job.id).eq("contact_id", contact.id).maybeSingle();
+      allowed = !!link;
+    }
+    if (!job || !allowed) {
       return json({ status: "failed", message: "Job not found" }, 404);
     }
 
-    const { data: basket } = await admin
-      .from("baskets")
-      .select("id, basket_lines(product:products(name, description, sku))")
-      .eq("company_id", contact.company_id)
-      .maybeSingle();
+    // company users share the company basket; claim users have their own
+    const { data: basketId } = await admin.rpc("order_basket_id", { p_contact_id: contact.id });
+    const { data: basket } = basketId
+      ? await admin
+          .from("baskets")
+          .select("id, basket_lines(product:products(name, description, sku))")
+          .eq("id", basketId)
+          .maybeSingle()
+      : { data: null };
     const lines = basket?.basket_lines ?? [];
     if (!lines.length) return json({ status: "failed", message: "Basket not found" }, 404);
 

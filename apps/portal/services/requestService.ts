@@ -255,3 +255,36 @@ export const getJob = async (guid: string) => {
   const job = unwrap(await supabase.from("jobs").select("*, orders(*)").eq("id", guid).single());
   return { status: "OK", job: g<TJob>(job) };
 };
+
+// ---------------------------------------------------------------------------
+// Claim users: passwordless sign-in with a 6-digit emailed code
+// ---------------------------------------------------------------------------
+export const requestLoginCode = async (email: string) => {
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim().toLowerCase(),
+    options: { shouldCreateUser: false },
+  });
+  if (error) {
+    const msg = /signups? not allowed|not found|user not found/i.test(error.message)
+      ? "We couldn't find a claim for that email. Check the address in your email from us."
+      : error.message;
+    throw apiError(msg, 422);
+  }
+};
+
+export const verifyLoginCode = async (email: string, code: string): Promise<TLoginRes> => {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.trim().toLowerCase(),
+    token: code.replace(/\D/g, ""),
+    type: "email",
+  });
+  if (error || !data.session) throw apiError("That code is incorrect or has expired. Request a new one.", 422);
+
+  const { data: contact } = await supabase
+    .from("contacts").select("active").eq("user_id", data.session.user.id).maybeSingle();
+  if (!contact?.active) {
+    await supabase.auth.signOut();
+    throw apiError("Your claim hasn't been activated yet.", 422);
+  }
+  return { status: "OK", token: data.session.access_token };
+};

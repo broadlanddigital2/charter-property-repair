@@ -81,6 +81,10 @@ const Login = () => {
             <Button variant="success">Login</Button>
           </div>
         </form>
+
+        <Link href="/claim-login" className="text-white text-sm underline">
+          Have a claim? Sign in with an emailed code
+        </Link>
       </section>
     </main>
   );

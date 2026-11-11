@@ -193,5 +193,20 @@ export type TClaim = {
   created_at: string;
   company: { guid: string; name: string };
   rooms: TClaimRoom[];
+  users: TClaimUser[];
+  activated_at: string | null;
   orders: number;
+};
+
+export type TClaimUser = {
+  guid: string;
+  name: string;
+  email: string;
+  mobile: string | null;
+  phone?: string | null;
+  type: string | null;
+  active: number;
+  has_login?: boolean;
+  invited_at?: string | null;
+  company_name?: string | null;
 };

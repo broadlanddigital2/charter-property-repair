@@ -3,6 +3,8 @@
 //   POST { action: "update",   contact_guid, ...fields, password? }
 //   POST { action: "activate", email }   -> marks active and emails a set-password link
 //   POST { action: "deactivate", email }
+//   POST { action: "activate_claim", job_guid } -> activates the claim's users and emails them a
+//        link to the portal; they sign in with their email + a 6-digit code
 import { callerContact, config, corsHeaders, isAdminContact, json, serviceClient } from "../_shared/http.ts";
 
 const CONTACT_FIELDS = ["name", "email", "is_primary_contact", "active", "phone", "mobile", "type", "company_id"] as const;
@@ -86,6 +88,69 @@ Deno.serve(async (req) => {
         const { error: e3 } = await admin.from("contacts").update({ active: true, user_id: userId }).eq("id", contact.id);
         if (e3) throw e3;
         return json({ status: "OK", message: "User account activated successfully." });
+      }
+
+      case "activate_claim": {
+        const { data: job, error: je } = await admin
+          .from("jobs")
+          .select("id, job_number, budget, job_rooms(room_id), job_contacts(contact:contacts(id, name, email, user_id, active))")
+          .eq("id", body.job_guid)
+          .single();
+        if (je) throw je;
+        const missing: string[] = [];
+        if (job.budget === null || job.budget === undefined) missing.push("a budget");
+        if (!job.job_rooms?.length) missing.push("at least one room");
+        if (!job.job_contacts?.length) missing.push("at least one user");
+        if (missing.length) {
+          return json({ status: "failed", message: `Add ${missing.join(", ")} before activating.` }, 422);
+        }
+
+        const sent: string[] = [];
+        const failed: { email: string; message: string }[] = [];
+        for (const link of job.job_contacts) {
+          // deno-lint-ignore no-explicit-any
+          const c = (link as any).contact as { id: string; name: string; email: string; user_id: string | null };
+          const email = String(c.email ?? "").trim().toLowerCase();
+          try {
+            let userId = c.user_id;
+            if (!userId) {
+              const { data: existing } = await admin.rpc("auth_user_id_by_email", { p_email: email });
+              userId = (existing as string | null) ?? null;
+            }
+            if (!userId) {
+              // passwordless login; no email is sent by this call
+              const { data, error } = await admin.auth.admin.createUser({
+                email,
+                email_confirm: true,
+                user_metadata: { name: c.name },
+              });
+              if (error) throw error;
+              userId = data.user.id;
+            }
+            const { error: ue } = await admin.from("contacts").update({ active: true, user_id: userId }).eq("id", c.id);
+            if (ue) throw ue;
+
+            // Sends the "Magic link" email template: link to the portal sign-in page + 6-digit code.
+            const { error: oe } = await admin.auth.signInWithOtp({
+              email,
+              options: { shouldCreateUser: false, emailRedirectTo: `${portalUrl}/claim-login?email=${encodeURIComponent(email)}` },
+            });
+            if (oe) throw oe;
+            sent.push(email);
+          } catch (err) {
+            failed.push({ email, message: err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err) });
+          }
+        }
+
+        if (sent.length) {
+          const { error: me } = await admin.rpc("claim_mark_activated", { p_job: job.id });
+          if (me) throw me;
+        }
+        return json(
+          { status: failed.length && !sent.length ? "failed" : "OK", sent, failed,
+            message: failed.length ? `Email failed for ${failed.map((f) => `${f.email} (${f.message})`).join(", ")}` : undefined },
+          failed.length && !sent.length ? 500 : 200
+        );
       }
 
       case "deactivate": {

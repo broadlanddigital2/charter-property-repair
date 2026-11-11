@@ -19,6 +19,7 @@ import {
   TRoom,
   TClaim,
   TClaimRoom,
+  TClaimUser,
   TRoomRule,
   TProductRoom,
 } from "@/types/api";
@@ -410,7 +411,7 @@ export const getProduct = async (guid: string) =>
 // ---------------------------------------------------------------------------
 // Claims (ServiceM8 jobs) — set-up of budget and rooms
 // ---------------------------------------------------------------------------
-export type TClaimFilter = "open" | "setup" | "ordered" | "all";
+export type TClaimFilter = "open" | "setup" | "active" | "ordered" | "all";
 
 export const getClaimsPage = async ({
   search,
@@ -442,3 +443,30 @@ export const setClaim = async (guid: string, budget: number | null, rooms: TClai
       p_rooms: rooms.map(({ slug, quantity, notes }) => ({ slug, quantity, notes })),
     })
   ) as { guid: string; budget: number | null; rooms: TClaimRoom[] };
+
+export const searchContacts = async (q: string) =>
+  unwrap(await supabase.rpc("api_search_contacts", { p_q: q, p_limit: 20 })) as TClaimUser[];
+
+export const claimAddUser = async (
+  jobGUID: string,
+  user: { contactGUID?: string; name?: string; email?: string; mobile?: string }
+) =>
+  unwrap(
+    await supabase.rpc("api_claim_add_user", {
+      p_job: jobGUID,
+      p_contact: user.contactGUID ?? null,
+      p_name: user.name ?? null,
+      p_email: user.email ?? null,
+      p_mobile: user.mobile ?? null,
+    })
+  ) as TClaimUser[];
+
+export const claimRemoveUser = async (jobGUID: string, contactGUID: string) =>
+  unwrap(await supabase.rpc("api_claim_remove_user", { p_job: jobGUID, p_contact: contactGUID })) as TClaimUser[];
+
+/** Activates the claim's users and emails them a sign-in link (6-digit code login). */
+export const activateClaim = async (jobGUID: string) =>
+  invoke<{ status: string; sent: string[]; failed: { email: string; message: string }[]; message?: string }>(
+    "admin-users",
+    { action: "activate_claim", job_guid: jobGUID }
+  );

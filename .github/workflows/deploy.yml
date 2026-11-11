@@ -79,3 +79,22 @@ jobs:
           else
             supabase db push --remote="$SUPABASE_DB_URL" --yes
           fi
+      - name: Auth email templates (6-digit sign-in code)
+        continue-on-error: true
+        run: |
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || exit 0
+          body=$(jq -n --rawfile ml supabase/templates/magic_link.html '{
+            mailer_subjects_magic_link: "Your Charter Property Repair claim",
+            mailer_templates_magic_link_content: $ml,
+            mailer_subjects_confirmation: "Your Charter Property Repair claim",
+            mailer_templates_confirmation_content: $ml,
+            mailer_otp_length: 6
+          }')
+          code=$(curl -sS -o /tmp/auth.json -w '%{http_code}' -X PATCH \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" -d "$body")
+          echo "HTTP $code"
+          if [ "$code" -ge 300 ]; then
+            head -c 400 /tmp/auth.json; echo
+            echo "::warning::Couldn't update auth email templates (token scope?). Paste supabase/templates/magic_link.html into Authentication > Emails > Magic Link."
+          fi
