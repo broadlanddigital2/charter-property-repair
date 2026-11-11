@@ -18,7 +18,7 @@ const SelectableProduct = ({ product, busy, disabled, onChange }: Props) => {
 
   return (
     <div
-      className={`relative flex flex-col rounded-[11px] overflow-hidden bg-white shadow-sm border-2 ${
+      className={`relative flex flex-col rounded-xl overflow-hidden bg-white shadow-sm border-2 ${
         selected ? "border-[#6D20C7]" : "border-transparent"
       }`}
     >

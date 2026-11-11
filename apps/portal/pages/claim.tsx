@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
 import DashboardLayout from "@/components/DashboardLayout";
+import PageHeader from "@/components/PageHeader";
 import withAuth from "@/hoc/withAuth";
 import { useStores } from "@/hooks/useStores";
 import { errorLogger } from "@/services/axiosService";
@@ -67,7 +68,7 @@ const ClaimPage = () => {
   if (!claim) {
     return (
       <DashboardLayout>
-        <div className="max-w-[1370px] mx-auto px-4 py-10" />
+        <div className="max-w-[1280px] mx-auto px-4 py-10" />
       </DashboardLayout>
     );
   }
@@ -76,67 +77,66 @@ const ClaimPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-[1370px] mx-auto px-4 py-8">
-        <Link href="/dashboard" className="text-sm underline text-gray-600">
-          ← Back to dashboard
-        </Link>
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm text-gray-500">
+      <div className="max-w-[1280px] mx-auto px-4 py-8">
+        <PageHeader
+          back={reviewing ? { href: `/claim?job=${claim.guid}`, label: "Back to rooms" } : { href: "/dashboard", label: "My claims" }}
+          eyebrow={
+            <>
               Claim {claim.job_number}
               {claim.company?.name ? ` · ${claim.company.name}` : ""}
               {claim.company ? ` · Price band ${claim.company.price_band ?? "not set"}` : ""}
-            </p>
-            <h1 className="text-2xl font-bold">{reviewing ? "Review your selections" : "Choose a room"}</h1>
-            {address && <p className="text-gray-600">{address}</p>}
-          </div>
-          {!claim.ordered && lines.length > 0 && !reviewing && (
-            <Link
-              href={`/claim?job=${claim.guid}&review=1`}
-              className="rounded-md bg-[#31B75C] text-white px-5 py-3 font-semibold hover:bg-[#3d9d5b]"
-            >
-              Review & place order ({lines.length})
-            </Link>
-          )}
-        </div>
-
+            </>
+          }
+          title={reviewing ? "Review your selections" : "Choose a room"}
+          subtitle={address}
+          actions={
+            !claim.ordered && lines.length > 0 && !reviewing ? (
+              <Link
+                href={`/claim?job=${claim.guid}&review=1`}
+                className="rounded-md bg-[#31B75C] text-white px-5 py-3 font-semibold hover:bg-[#2a9e4f]"
+              >
+                Review & place order ({lines.length})
+              </Link>
+            ) : undefined
+          }
+        />
 
         {claim.ordered && (
-          <div className="mt-6 rounded-[11px] bg-[#D1FADF] text-[#027A48] p-4">
+          <div className="mb-6 rounded-xl bg-[#D1FADF] text-[#027A48] p-4">
             This claim has been ordered. You can see it under <Link href="/orders" className="underline">Orders</Link>.
           </div>
         )}
 
         {!reviewing ? (
           claim.rooms.length === 0 ? (
-            <p className="mt-10 text-gray-600">No rooms have been set up on this claim yet. Please contact us.</p>
+            <p className="text-gray-600">No rooms have been set up on this claim yet. Please contact us.</p>
           ) : (
-            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {claim.rooms.map((room) => {
                 const done = room.items.filter((i) => i.selected > 0).length;
                 return (
                   <Link
                     key={room.slug}
                     href={`/claim-room?job=${claim.guid}&room=${room.slug}`}
-                    className="group rounded-[11px] bg-[#6D20C7]/10 hover:bg-[#6D20C7] p-6 duration-200"
+                    className="group rounded-xl bg-white shadow-sm ring-1 ring-transparent hover:ring-[#6D21C7] p-5 duration-150"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <h2 className="text-xl font-bold group-hover:text-white">
+                      <h2 className="text-xl font-bold">
                         {room.name}
                         {room.quantity > 1 && <span className="font-normal"> × {room.quantity}</span>}
                       </h2>
-                      <span className="text-xs font-semibold rounded-full bg-white px-3 py-1 text-[#6D20C7]">
+                      <span className="text-xs font-semibold rounded-full bg-[#6D21C7]/10 px-3 py-1 text-[#6D21C7]">
                         {done}/{room.items.length} items
                       </span>
                     </div>
-                    {room.notes && <p className="mt-2 text-sm text-gray-700 group-hover:text-white/90">{room.notes}</p>}
-                    <div className="mt-4 h-2 rounded-full bg-white/70 overflow-hidden">
+                    {room.notes && <p className="mt-2 text-sm text-gray-700 ">{room.notes}</p>}
+                    <div className="mt-4 h-2 rounded-full bg-gray-100 overflow-hidden">
                       <div
                         className="h-full bg-[#31B75C]"
                         style={{ width: `${room.items.length ? Math.round((done / room.items.length) * 100) : 0}%` }}
                       />
                     </div>
-                    <p className="mt-3 text-sm font-semibold group-hover:text-white">
+                    <p className="mt-3 text-sm font-semibold text-[#6D21C7]">
                       {claim.ordered ? "View" : done ? "Continue →" : "Start →"}
                     </p>
                   </Link>
@@ -145,7 +145,7 @@ const ClaimPage = () => {
             </div>
           )
         ) : (
-          <div className="mt-8">
+          <div>
             {lines.length === 0 ? (
               <p className="text-gray-600">You haven&apos;t added anything yet.</p>
             ) : (

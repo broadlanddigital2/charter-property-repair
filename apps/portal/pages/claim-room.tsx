@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 import DashboardLayout from "@/components/DashboardLayout";
+import PageHeader from "@/components/PageHeader";
 import SelectableProduct from "@/components/claim/SelectableProduct";
 import FilterBar from "@/components/claim/FilterBar";
 import withAuth from "@/hoc/withAuth";
@@ -143,7 +144,7 @@ const ClaimRoomPage = () => {
   if (!claim) {
     return (
       <DashboardLayout>
-        <div className="max-w-[1370px] mx-auto px-4 py-10" />
+        <div className="max-w-[1280px] mx-auto px-4 py-10" />
       </DashboardLayout>
     );
   }
@@ -151,7 +152,7 @@ const ClaimRoomPage = () => {
   if (!room) {
     return (
       <DashboardLayout>
-        <div className="max-w-[1370px] mx-auto px-4 py-10">
+        <div className="max-w-[1280px] mx-auto px-4 py-10">
           <p>That room isn&apos;t part of this claim.</p>
           <Link href={`/claim?job=${jobGUID}`} className="underline">
             Back to your claim
@@ -165,33 +166,25 @@ const ClaimRoomPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-[1370px] mx-auto px-4 py-8">
-        <Link href={`/claim?job=${jobGUID}`} className="text-sm underline text-gray-600">
-          ← All rooms
-        </Link>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm text-gray-500">
+      <div className="max-w-[1280px] mx-auto px-4 py-8">
+        <PageHeader
+          back={{ href: `/claim?job=${jobGUID}`, label: "All rooms" }}
+          eyebrow={
+            <>
               Claim {claim.job_number}
               {claim.company ? ` · Price band ${claim.company.price_band ?? "not set"}` : ""}
-            </p>
-            <h1 className="text-2xl font-bold">
-              {room.name}
-              {room.quantity > 1 && <span className="font-normal"> × {room.quantity}</span>}
-            </h1>
-            {room.notes && <p className="text-gray-600">{room.notes}</p>}
-          </div>
-          <p className="text-sm text-gray-600">
-            {doneCount} of {items.length} items chosen
-          </p>
-        </div>
+            </>
+          }
+          title={room.quantity > 1 ? `${room.name} × ${room.quantity}` : room.name}
+          subtitle={room.notes ?? undefined}
+          actions={<span className="text-sm text-gray-600">{doneCount} of {items.length} items chosen</span>}
+        />
 
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-[280px_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           {/* Items needed for this room */}
           <nav aria-label="Items for this room" className="lg:sticky lg:top-4 self-start">
             <p className="text-sm font-semibold text-gray-500 mb-2">What&apos;s needed</p>
-            <ol className="bg-white rounded-[11px] shadow-sm overflow-hidden">
+            <ol className="bg-white rounded-xl shadow-sm overflow-hidden">
               {items.map((i, idx) => {
                 const active = i.item === current?.item;
                 return (

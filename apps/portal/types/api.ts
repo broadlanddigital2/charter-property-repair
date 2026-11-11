@@ -181,6 +181,8 @@ export type TJob = {
   status?: string | null;
   budget?: number | null;
   orders?: unknown[];
+  rooms?: { slug: string; name: string; quantity: number; notes: string | null }[];
+  activated_at?: string | null;
   created_at: string;
   updated_at: string;
 };

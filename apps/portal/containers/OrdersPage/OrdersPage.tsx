@@ -1,96 +1,111 @@
-import withAuth from "@/hoc/withAuth";
-import DashboardLayout from "@/components/DashboardLayout";
-import Cookies from "js-cookie";
-
-import { useStores } from "@/hooks/useStores";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
-import { TOrder } from "@/types/api";
-import { CookiesEnum } from "@/enums/cookies";
+
+import withAuth from "@/hoc/withAuth";
+import DashboardLayout from "@/components/DashboardLayout";
+import PageHeader from "@/components/PageHeader";
+import { useStores } from "@/hooks/useStores";
 import { getOrderData } from "@/services/requestService";
 import { errorLogger } from "@/services/axiosService";
-import OrderLine from "./OrderLine";
-import Button from "@/components/Button";
-import { Icon } from "@/components/Icon";
-import { useRouter } from "next/router";
+import { TJob, TOrder } from "@/types/api";
 
+type Line = {
+  guid: string;
+  name?: string;
+  sku?: string;
+  quantity?: number;
+  item?: string | null;
+  in_budget?: number;
+  product?: { name?: string; sku?: string; image?: string | null } | null;
+};
+
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+/** The signed-in user's orders, newest first; open one to see what was ordered. */
 const OrdersPage = () => {
-  const router = useRouter();
+  const { authStore } = useStores();
+  const jobs = (authStore.getUser?.company?.jobs || []) as TJob[];
+  const orders = jobs
+    .flatMap((j) => ((j.orders as { guid: string; created_at: string }[]) || []).map((o) => ({ ...o, job: j })))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
-  const { authStore, loaderStore } = useStores();
-
-  const [order, setOrder] = useState<TOrder | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [details, setDetails] = useState<Record<string, TOrder>>({});
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      // const tempOrderGUID = Cookies.get(CookiesEnum.TempOrderId);
-      const testOrderGUID = "b7f03eb3-a647-413f-b2a4-7e804792bdb9";
-
-      if (testOrderGUID) {
-        (async () => {
-          try {
-            loaderStore.setLoading(true);
-            const { order: orderData } = await getOrderData(testOrderGUID);
-            setOrder(orderData);
-            console.log({ orderData });
-          } catch (error) {
-            errorLogger(error);
-          } finally {
-            loaderStore.setLoading(false);
-          }
-        })();
-      }
-    }
-  }, []);
+    if (!openId || details[openId]) return;
+    getOrderData(openId)
+      .then(({ order }) => setDetails((d) => ({ ...d, [openId]: order })))
+      .catch((e) => errorLogger(e, "Couldn't load that order"));
+  }, [openId, details]);
 
   return (
     <DashboardLayout>
-      <div className="max-w-[1400px] mx-auto px-4 py-3">
-        <Button
-          onClick={() => router.back()}
-          icon={
-            <Icon src="/icons/left-arrow.svg" alt="left arrow icon" size={22} />
-          }
-          className="mt-12"
-        >
-          Go Back
-        </Button>
+      <div className="max-w-[1280px] mx-auto px-4 py-8">
+        <PageHeader title="Orders" subtitle="Products you've ordered for your claims." />
 
-        <h2 className="mt-8">
-          Welcome Back <b>{authStore.getUser?.name?.split(" ")?.[0]}</b>
-        </h2>
-
-        <h1 className="font-bold text-2xl mt-4">Charter Property Portal</h1>
-
-        {order && (
-          <>
-            <div className="bg-[#EDEDED] p-6 mt-6">
-              <h3 className="font-bold text-2xl">Order number: {order.guid}</h3>
-              <h3 className="font-bold text-2xl mt-4">Claim number: 1234567</h3>
-            </div>
-
-            <div className="flex flex-col gap-y-8 mt-8">
-              {order.order_lines &&
-                order.order_lines.map((orderLine) => (
-                  <OrderLine key={orderLine.guid} orderLine={orderLine} />
-                ))}
-            </div>
-          </>
+        {orders.length === 0 ? (
+          <div className="rounded-xl bg-white shadow-sm p-8 text-center text-gray-600">You haven&apos;t placed any orders yet.</div>
+        ) : (
+          <ul className="space-y-3">
+            {orders.map((o) => {
+              const isOpen = openId === o.guid;
+              const lines = (details[o.guid]?.order_lines as unknown as Line[]) || [];
+              return (
+                <li key={o.guid} className="rounded-xl bg-white shadow-sm">
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenId(isOpen ? null : o.guid)}
+                    className="w-full flex flex-wrap items-center gap-x-6 gap-y-1 px-5 py-4 text-left"
+                  >
+                    <span className="font-semibold">Claim {o.job.job_number}</span>
+                    <span className="text-gray-600 flex-1 min-w-[12rem]">
+                      {o.job.job_address?.replace(/\s*\n\s*/g, ", ").replace(/,\s*$/, "")}
+                    </span>
+                    <span className="text-sm text-gray-500">Ordered {fmtDate(o.created_at)}</span>
+                    <span aria-hidden className="text-gray-400">{isOpen ? "▴" : "▾"}</span>
+                  </button>
+                  {isOpen && (
+                    <div className="border-t px-5 py-4">
+                      {!details[o.guid] ? (
+                        <p className="text-sm text-gray-500">Loading…</p>
+                      ) : lines.length === 0 ? (
+                        <p className="text-sm text-gray-500">No lines on this order.</p>
+                      ) : (
+                        <table className="w-full text-sm">
+                          <thead className="text-left text-gray-500">
+                            <tr>
+                              <th className="py-1 pr-3 font-medium w-14">Qty</th>
+                              <th className="py-1 pr-3 font-medium">Product</th>
+                              <th className="py-1 pr-3 font-medium">For</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {lines.map((l) => (
+                              <tr key={l.guid} className="border-t">
+                                <td className="py-2 pr-3 font-semibold">{l.quantity ?? 1}×</td>
+                                <td className="py-2 pr-3">
+                                  {l.product?.name ?? l.name}
+                                  <span className="block text-xs text-gray-500">{l.product?.sku ?? l.sku}</span>
+                                </td>
+                                <td className="py-2 pr-3 text-gray-600">{l.item ?? "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
-
-        <div className="bg-[#6D21C7] mt-12 p-6 flex justify-between items-center">
-          <p className="text-white font-semibold text-lg">
-            If you have any queries regarding your claim please open a support
-            ticket
-          </p>
-
-          <button className="bg-transparent border-2 text-white border-white rounded-[3px] py-2 px-8 duration-300 hover:bg-white hover:text-[#6D20C7]">
-            Contact Support
-          </button>
-        </div>
       </div>
     </DashboardLayout>
   );
 };
 
-export default observer(withAuth(OrdersPage));
+export default withAuth(observer(OrdersPage));
