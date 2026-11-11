@@ -182,9 +182,12 @@ const ClaimRoomPage = () => {
 
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           {/* Items needed for this room */}
-          <nav aria-label="Items for this room" className="lg:sticky lg:top-4 self-start">
+          <nav
+            aria-label="Items for this room"
+            className="self-start lg:sticky lg:top-4 lg:flex lg:flex-col lg:max-h-[calc(100dvh-2rem)]"
+          >
             <p className="text-sm font-semibold text-gray-500 mb-2">What&apos;s needed</p>
-            <ol className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <ol className="bg-white rounded-xl shadow-sm overflow-hidden lg:overflow-y-auto lg:overscroll-contain lg:min-h-0">
               {items.map((i, idx) => {
                 const active = i.item === current?.item;
                 return (
