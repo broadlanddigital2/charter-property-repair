@@ -32,24 +32,20 @@ Deno.serve(async (req) => {
       return json({ status: "failed", message: "Job not found" }, 404);
     }
 
-    // company users share the company basket; claim users have their own
-    const { data: basketId } = await admin.rpc("order_basket_id", { p_contact_id: contact.id });
-    const { data: basket } = basketId
-      ? await admin
-          .from("baskets")
-          .select("id, basket_lines(product:products(name, description, sku))")
-          .eq("id", basketId)
-          .maybeSingle()
-      : { data: null };
-    const lines = basket?.basket_lines ?? [];
-    if (!lines.length) return json({ status: "failed", message: "Basket not found" }, 404);
+    // this claim's lines from the caller's basket (company basket, or a claim user's own)
+    const { data: lines, error: le } = await admin.rpc("order_note_lines", {
+      p_contact_id: contact.id,
+      p_job_id: job.id,
+    });
+    if (le) throw le;
+    if (!lines?.length) return json({ status: "failed", message: "Basket not found" }, 404);
 
-    // Same note format as the legacy CreateOrderService
+    // Legacy note format, now with quantity and room/item where known
     let note = "Order lines:";
-    for (const l of lines) {
-      // deno-lint-ignore no-explicit-any
-      const p = (l as any).product ?? {};
-      note += ` ${p.name ?? ""} ${p.description ?? ""} ${p.sku ?? ""},`;
+    // deno-lint-ignore no-explicit-any
+    for (const l of lines as any[]) {
+      const where = l.room ? ` [${l.room}${l.item ? ` – ${l.item}` : ""}]` : "";
+      note += ` ${l.quantity > 1 ? `${l.quantity} x ` : ""}${l.name ?? ""} ${l.description ?? ""} ${l.sku ?? ""}${where},`;
     }
     note += `\nPlaced by ${contact.name} <${contact.email}>`;
 
