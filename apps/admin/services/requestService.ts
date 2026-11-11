@@ -392,7 +392,7 @@ export const getRoomRules = async () =>
   unwrap(
     await supabase
       .from("room_rules")
-      .select("id, supplier, category, name_pattern, rooms, priority, origin, note, active")
+      .select("id, supplier, category, name_pattern, item_name, rooms, priority, origin, note, active")
       .order("supplier")
       .order("priority", { ascending: false })
       .order("category", { nullsFirst: true })

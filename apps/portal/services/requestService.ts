@@ -22,6 +22,10 @@ import {
   TProduct,
   TSupplier,
   TUser,
+  TBudgetSummary,
+  TClaimSelectionLine,
+  TClaimView,
+  TItemProduct,
 } from "@/types/api";
 import { apiError, invoke, requireSession, supabase, unwrap } from "./supabase";
 
@@ -288,3 +292,27 @@ export const verifyLoginCode = async (email: string, code: string): Promise<TLog
   }
   return { status: "OK", token: data.session.access_token };
 };
+
+// ---------------------------------------------------------------------------
+// Claim → rooms → items → products
+// ---------------------------------------------------------------------------
+export const getClaimView = async (jobGUID: string) =>
+  unwrap(await supabase.rpc("api_claim_view", { p_job: jobGUID })) as TClaimView;
+
+export const getItemProducts = async (
+  jobGUID: string, room: string, item: string, search = "", page = 1, perPage = 24
+) => {
+  const res = unwrap(await supabase.rpc("api_item_products", {
+    p_job: jobGUID, p_room: room, p_item: item, p_search: search || null, p_page: page, p_per_page: perPage,
+  })) as { total: number; data: TItemProduct[] };
+  return { products: res.data, total: res.total };
+};
+
+/** quantity 0 removes the product from this item */
+export const setSelection = async (jobGUID: string, room: string, item: string, productGUID: string, quantity: number) =>
+  unwrap(await supabase.rpc("api_set_selection", {
+    p_job: jobGUID, p_room: room, p_item: item, p_product: productGUID, p_quantity: quantity,
+  })) as { quantity: number; budget_summary: TBudgetSummary };
+
+export const getClaimSelection = async (jobGUID: string) =>
+  unwrap(await supabase.rpc("api_claim_selection", { p_job: jobGUID })) as TClaimSelectionLine[];

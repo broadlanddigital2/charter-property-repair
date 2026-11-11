@@ -69,10 +69,10 @@ const Dashboard = () => {
               </div>
 
               <Link
-                href={`/process-claim?job=${job.guid}`}
+                href={`/claim?job=${job.guid}`}
                 className="bg-transparent border-2 border-white self-end rounded-[3px] py-2 px-4 duration-300 hover:bg-white hover:text-[#6D20C7]"
               >
-                Process Claim
+                Choose products
               </Link>
             </div>
           ))}

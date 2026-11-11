@@ -204,3 +204,44 @@ export type TPagination<T> = {
   to: number;
   total: number;
 };
+
+// ---- Claim → rooms → items journey ----
+export type TBudgetSummary = {
+  budget: number | null;
+  total_in_budget: number;
+  total_out_of_budget: number;
+  total_remaning_budget: number;
+  customer_to_pay: number;
+} | null;
+
+export type TRoomItem = { item: string; products: number; selected: number };
+
+export type TClaimRoom = {
+  slug: string;
+  name: string;
+  quantity: number;
+  notes: string | null;
+  items: TRoomItem[];
+  selected_lines: number;
+};
+
+export type TClaimView = {
+  guid: string;
+  job_number: string | null;
+  job_address: string | null;
+  status: string | null;
+  budget: number | null;
+  ordered: boolean;
+  budget_summary: TBudgetSummary;
+  rooms: TClaimRoom[];
+};
+
+export type TItemProduct = TProduct & { selected_quantity: number };
+
+export type TClaimSelectionLine = {
+  room: string;
+  room_name: string;
+  item: string;
+  quantity: number;
+  product: TProduct;
+};

@@ -137,6 +137,8 @@ const RoomsPage = () => {
             </div>
             <p className="small text-body-secondary mb-0 mt-2">
               Each product takes the highest-priority rule that matches its supplier, category and keyword.
+              The Item name is what claim users see as a step in the room (e.g. Kitchen units, Worktops); leave it blank
+              to group by the product&apos;s category.
               Products with rooms set by hand on the Products screen are not changed.
             </p>
           </div>
@@ -146,6 +148,9 @@ const RoomsPage = () => {
                 <tr>
                   <th>Supplier</th>
                   <th>Category / keyword</th>
+                  <th style={{ minWidth: 170 }} title="Groups products into the items a claim user works through in each room">
+                    Item
+                  </th>
                   {ROOMS.map((r) => (
                     <th key={r.slug} className="text-center small" style={{ width: 64 }} title={r.name}>
                       {r.short}
@@ -172,6 +177,22 @@ const RoomsPage = () => {
                         {rule.priority !== 0 && <span className="badge text-bg-light">priority {rule.priority}</span>}
                         {rule.origin !== "sheet" && rule.note && <span>{rule.note}</span>}
                       </div>
+                    </td>
+                    <td>
+                      <input
+                        className="form-control form-control-sm"
+                        defaultValue={rule.item_name ?? ""}
+                        placeholder="From category"
+                        aria-label={`Item name for ${rule.category ?? rule.supplier}`}
+                        disabled={busy === rule.id}
+                        onBlur={(e) => {
+                          const v = e.target.value.trim() || null;
+                          if (v !== (rule.item_name ?? null)) patchRule(rule, { item_name: v });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                        }}
+                      />
                     </td>
                     {ROOMS.map((r) => (
                       <td key={r.slug} className="text-center">

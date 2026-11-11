@@ -148,6 +148,7 @@ export type TRoomRule = {
   supplier: string;
   category: string | null;
   name_pattern: string | null;
+  item_name: string | null;
   rooms: string[];
   priority: number;
   origin: "sheet" | "suggested" | "manual";
