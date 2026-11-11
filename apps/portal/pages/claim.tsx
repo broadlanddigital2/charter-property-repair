@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import PageHeader, { bannerButton } from "@/components/PageHeader";
+import PageHeader from "@/components/PageHeader";
 import withAuth from "@/hoc/withAuth";
 import { useStores } from "@/hooks/useStores";
 import { errorLogger } from "@/services/axiosService";
@@ -100,7 +100,10 @@ const ClaimPage = () => {
           actions={
             !claim.ordered && !reviewing ? (
               allChosen ? (
-                <Link href={`/claim?job=${claim.guid}&review=1`} className={bannerButton}>
+                <Link
+                  href={`/claim?job=${claim.guid}&review=1`}
+                  className="rounded-md bg-[#31B75C] px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-[#2a9e4f]"
+                >
                   Review & place order ({lines.length})
                 </Link>
               ) : (
@@ -164,7 +167,60 @@ const ClaimPage = () => {
               })}
             </div>
           )
-        ) : (
+        ) : null}
+
+        {!reviewing && !claim.ordered && claim.rooms.length > 0 && (
+          <div
+            className={`mt-8 flex flex-wrap items-center gap-5 rounded-xl p-6 shadow-sm ${
+              allChosen ? "bg-[#D1FADF]" : "bg-white"
+            }`}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-bold">
+                {allChosen ? "Everything's chosen — you're ready to order" : "Choose a product for every item to place your order"}
+              </p>
+              <div className="mt-3 h-2.5 max-w-md overflow-hidden rounded-full bg-gray-200">
+                <div
+                  className="h-full bg-[#31B75C]"
+                  style={{ width: `${totalItems ? Math.round(((totalItems - remaining.length) / totalItems) * 100) : 0}%` }}
+                />
+              </div>
+              <p className="mt-2 text-sm text-gray-600">
+                {totalItems - remaining.length} of {totalItems} items chosen across {claim.rooms.length} room
+                {claim.rooms.length === 1 ? "" : "s"}
+                {!allChosen && remaining[0] && (
+                  <>
+                    {" · "}
+                    <Link
+                      href={`/claim-room?job=${claim.guid}&room=${remaining[0].room.slug}&item=${encodeURIComponent(remaining[0].item)}`}
+                      className="underline font-medium text-[#6D21C7]"
+                    >
+                      Next: {remaining[0].room.name} – {remaining[0].item}
+                    </Link>
+                  </>
+                )}
+              </p>
+            </div>
+            {allChosen ? (
+              <Link
+                href={`/claim?job=${claim.guid}&review=1`}
+                className="rounded-md bg-[#31B75C] px-8 py-4 text-lg font-semibold text-white shadow hover:bg-[#2a9e4f]"
+              >
+                Review & place order →
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="cursor-not-allowed rounded-md bg-gray-300 px-8 py-4 text-lg font-semibold text-gray-600"
+                title="Choose a product for every item first"
+              >
+                Review & place order
+              </span>
+            )}
+          </div>
+        )}
+
+        {!reviewing ? null : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="space-y-6">
               {lines.length === 0 ? (
