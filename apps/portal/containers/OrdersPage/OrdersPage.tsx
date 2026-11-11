@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { observer } from "mobx-react-lite";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import withAuth from "@/hoc/withAuth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -16,86 +17,186 @@ type Line = {
   quantity?: number;
   item?: string | null;
   in_budget?: number;
-  product?: { name?: string; sku?: string; image?: string | null } | null;
+  product?: { guid?: string | null; name?: string; sku?: string; image?: string | null; in_budget?: number; supplier?: { name?: string } } | null;
 };
 
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  new Date(d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+const fmtTime = (d: string) => new Date(d).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+const cleanAddress = (a?: string | null) => a?.replace(/\s*\n\s*/g, ", ").replace(/,\s*$/, "") || "";
 
-/** The signed-in user's orders, newest first; open one to see what was ordered. */
+const Thumb = ({ src, size = 56 }: { src?: string | null; size?: number }) => (
+  <div className="shrink-0 overflow-hidden rounded-lg bg-[#F3ECFB] p-1" style={{ width: size, height: size }}>
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img
+      src={src || "/images/placeholder.jpg"}
+      alt=""
+      loading="lazy"
+      className="block h-full w-full object-contain"
+      onError={(e) => {
+        const img = e.currentTarget;
+        if (!img.src.endsWith("/images/placeholder.jpg")) img.src = "/images/placeholder.jpg";
+      }}
+    />
+  </div>
+);
+
+/** The signed-in user's orders, newest first, each showing what was ordered. */
 const OrdersPage = () => {
   const { authStore } = useStores();
   const jobs = (authStore.getUser?.company?.jobs || []) as TJob[];
-  const orders = jobs
-    .flatMap((j) => ((j.orders as { guid: string; created_at: string }[]) || []).map((o) => ({ ...o, job: j })))
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const orders = useMemo(
+    () =>
+      jobs
+        .flatMap((j) => ((j.orders as { guid: string; created_at: string }[]) || []).map((o) => ({ ...o, job: j })))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    [jobs]
+  );
 
-  const [openId, setOpenId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, TOrder>>({});
+  const [open, setOpen] = useState<Record<string, boolean>>({});
 
+  // load every order's lines (customers have a handful) so cards can show counts and pictures
   useEffect(() => {
-    if (!openId || details[openId]) return;
-    getOrderData(openId)
-      .then(({ order }) => setDetails((d) => ({ ...d, [openId]: order })))
-      .catch((e) => errorLogger(e, "Couldn't load that order"));
-  }, [openId, details]);
+    orders.forEach((o, i) => {
+      if (details[o.guid]) return;
+      getOrderData(o.guid)
+        .then(({ order }) => setDetails((d) => ({ ...d, [o.guid]: order })))
+        .catch((e) => errorLogger(e, "Couldn't load an order"));
+      if (i === 0) setOpen((s) => (o.guid in s ? s : { ...s, [o.guid]: true }));
+    });
+  }, [orders]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <DashboardLayout>
       <div className="max-w-[1280px] mx-auto px-4 py-8">
-        <PageHeader title="Orders" subtitle="Products you've ordered for your claims." />
+        <PageHeader
+          title="Your orders"
+          subtitle="Everything you've ordered for your claims."
+          chips={orders.length ? [`${orders.length} order${orders.length === 1 ? "" : "s"}`] : undefined}
+        />
 
         {orders.length === 0 ? (
-          <div className="rounded-xl bg-white shadow-sm p-8 text-center text-gray-600">You haven&apos;t placed any orders yet.</div>
+          <div className="rounded-xl bg-white p-10 text-center shadow-sm">
+            <p className="text-lg font-semibold">No orders yet</p>
+            <p className="mt-1 text-gray-600">When you place an order for a claim it will appear here.</p>
+            <Link href="/dashboard" className="mt-5 inline-block rounded-md bg-[#6D21C7] px-5 py-2.5 font-semibold text-white hover:bg-[#5a19a8]">
+              Go to my claims
+            </Link>
+          </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-5">
             {orders.map((o) => {
-              const isOpen = openId === o.guid;
-              const lines = (details[o.guid]?.order_lines as unknown as Line[]) || [];
+              const lines = ((details[o.guid]?.order_lines as unknown as Line[]) || []).slice();
+              const qty = lines.reduce((n, l) => n + (l.quantity ?? 1), 0);
+              const isOpen = !!open[o.guid];
+              const byItem = new Map<string, Line[]>();
+              for (const l of lines) {
+                const k = l.item || "Other";
+                byItem.set(k, [...(byItem.get(k) ?? []), l]);
+              }
               return (
-                <li key={o.guid} className="rounded-xl bg-white shadow-sm">
-                  <button
-                    type="button"
-                    aria-expanded={isOpen}
-                    onClick={() => setOpenId(isOpen ? null : o.guid)}
-                    className="w-full flex flex-wrap items-center gap-x-6 gap-y-1 px-5 py-4 text-left"
-                  >
-                    <span className="font-semibold">Claim {o.job.job_number}</span>
-                    <span className="text-gray-600 flex-1 min-w-[12rem]">
-                      {o.job.job_address?.replace(/\s*\n\s*/g, ", ").replace(/,\s*$/, "")}
-                    </span>
-                    <span className="text-sm text-gray-500">Ordered {fmtDate(o.created_at)}</span>
-                    <span aria-hidden className="text-gray-400">{isOpen ? "▴" : "▾"}</span>
-                  </button>
+                <li key={o.guid} className="overflow-hidden rounded-xl bg-white shadow-sm">
+                  {/* Order header */}
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b bg-[#F7F2FC] px-5 py-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-lg font-bold text-[#4B1590]">Claim {o.job.job_number}</span>
+                        <span className="rounded-full bg-[#D1FADF] px-2.5 py-0.5 text-xs font-semibold text-[#027A48]">Order placed</span>
+                      </div>
+                      {cleanAddress(o.job.job_address) && <p className="text-sm text-gray-600">{cleanAddress(o.job.job_address)}</p>}
+                    </div>
+                    <dl className="ml-auto flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                      <div>
+                        <dt className="text-xs text-gray-500">Ordered</dt>
+                        <dd className="font-medium">
+                          {fmtDate(o.created_at)} · {fmtTime(o.created_at)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-gray-500">Products</dt>
+                        <dd className="font-medium">{details[o.guid] ? lines.length : "…"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-gray-500">Total quantity</dt>
+                        <dd className="font-medium">{details[o.guid] ? qty : "…"}</dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  {/* Collapsed preview */}
+                  {!isOpen && (
+                    <div className="flex flex-wrap items-center gap-3 px-5 py-4">
+                      <div className="flex -space-x-2">
+                        {lines.slice(0, 6).map((l) => (
+                          <div key={l.guid} className="rounded-lg ring-2 ring-white">
+                            <Thumb src={l.product?.image} size={44} />
+                          </div>
+                        ))}
+                      </div>
+                      {lines.length > 6 && <span className="text-sm text-gray-500">+{lines.length - 6} more</span>}
+                      <button
+                        type="button"
+                        onClick={() => setOpen((s) => ({ ...s, [o.guid]: true }))}
+                        className="ml-auto rounded-md border border-[#6D21C7] px-4 py-2 text-sm font-semibold text-[#6D21C7] hover:bg-[#6D21C7] hover:text-white"
+                      >
+                        View items
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Items */}
                   {isOpen && (
-                    <div className="border-t px-5 py-4">
+                    <div>
                       {!details[o.guid] ? (
-                        <p className="text-sm text-gray-500">Loading…</p>
+                        <p className="px-5 py-4 text-sm text-gray-500">Loading…</p>
                       ) : lines.length === 0 ? (
-                        <p className="text-sm text-gray-500">No lines on this order.</p>
+                        <p className="px-5 py-4 text-sm text-gray-500">No items on this order.</p>
                       ) : (
-                        <table className="w-full text-sm">
-                          <thead className="text-left text-gray-500">
-                            <tr>
-                              <th className="py-1 pr-3 font-medium w-14">Qty</th>
-                              <th className="py-1 pr-3 font-medium">Product</th>
-                              <th className="py-1 pr-3 font-medium">For</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {lines.map((l) => (
-                              <tr key={l.guid} className="border-t">
-                                <td className="py-2 pr-3 font-semibold">{l.quantity ?? 1}×</td>
-                                <td className="py-2 pr-3">
-                                  {l.product?.name ?? l.name}
-                                  <span className="block text-xs text-gray-500">{l.product?.sku ?? l.sku}</span>
-                                </td>
-                                <td className="py-2 pr-3 text-gray-600">{l.item ?? "—"}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        Array.from(byItem.entries()).map(([item, ls]) => (
+                          <div key={item} className="border-b last:border-b-0">
+                            <p className="px-5 pt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">{item}</p>
+                            <ul className="px-3 pb-3">
+                              {ls.map((l) => (
+                                <li key={l.guid} className="flex items-center gap-4 rounded-lg px-2 py-2">
+                                  <Thumb src={l.product?.image} />
+                                  <div className="min-w-0 flex-1">
+                                    {l.product?.guid ? (
+                                      <Link href={`/product?guid=${l.product.guid}`} className="font-medium leading-snug hover:text-[#6D21C7]">
+                                        {l.product?.name ?? l.name}
+                                      </Link>
+                                    ) : (
+                                      <p className="font-medium leading-snug">{l.name}</p>
+                                    )}
+                                    <p className="mt-0.5 text-xs text-gray-500">
+                                      {[l.product?.supplier?.name, l.product?.sku ?? l.sku].filter(Boolean).join(" · ")}
+                                    </p>
+                                  </div>
+                                  <span
+                                    className={`hidden sm:inline text-[11px] font-semibold rounded-full px-2 py-0.5 ${
+                                      Number(l.in_budget ?? l.product?.in_budget) ? "bg-[#D1FADF] text-[#027A48]" : "bg-[#6D21C7] text-white"
+                                    }`}
+                                  >
+                                    {Number(l.in_budget ?? l.product?.in_budget) ? "Included" : "Extra cost"}
+                                  </span>
+                                  <span className="grid h-9 min-w-[2.75rem] place-items-center rounded-full bg-[#6D21C7]/10 px-3 text-sm font-bold text-[#6D21C7]">
+                                    ×{l.quantity ?? 1}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))
                       )}
+                      <div className="flex justify-end px-5 py-3 border-t bg-gray-50">
+                        <button
+                          type="button"
+                          onClick={() => setOpen((s) => ({ ...s, [o.guid]: false }))}
+                          className="text-sm text-gray-600 underline"
+                        >
+                          Hide items
+                        </button>
+                      </div>
                     </div>
                   )}
                 </li>
