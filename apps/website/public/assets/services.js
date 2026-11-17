@@ -36,7 +36,9 @@ document.querySelectorAll('.service-browser').forEach(browser => {
 
   function revealAnchor() {
     const hash = location.hash.slice(1);
-    const target = cards.find(card => card.id === hash);
+    // No hash: just render. (Cards without an id would otherwise match '' and
+    // scroll the page down on load, collapsing the sticky header.)
+    const target = hash ? cards.find(card => card.id === hash) : undefined;
     if (target) {
       category = target.dataset.category;
       expanded = true;
