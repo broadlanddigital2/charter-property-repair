@@ -105,7 +105,7 @@ const Login = () => {
                 </h1>
                 <p className="mt-5 max-w-xl text-lg text-white/85">
                   If your home has been damaged and Charter is handling the repairs for your insurer, this is where
-                  you pick the new kitchen units, flooring, sanitaryware and finishes you'd like, room by room, within
+                  you pick the new kitchen units, flooring, sanitaryware and finishes you’d like, room by room, within
                   your agreed budget.
                 </p>
                 <ul className="mt-7 grid gap-3 text-white/90 sm:grid-cols-3">
@@ -124,7 +124,7 @@ const Login = () => {
               <div className="rounded-2xl bg-white p-6 text-[#29232f] shadow-[0_20px_50px_#1d0b3a40] sm:p-8">
                 <h2 className="text-xl font-bold">Have a claim with us?</h2>
                 <p className="mt-2 text-sm text-gray-600">
-                  Use the email address your invitation was sent to. We'll email you a 6-digit code to open your claim.
+                  Use the email address your invitation was sent to. We’ll email you a 6-digit code to open your claim.
                 </p>
                 <Button href="/claim-login" className="mt-5 w-full rounded-lg text-base font-semibold">
                   Open my claim →
