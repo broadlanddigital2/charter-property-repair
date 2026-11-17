@@ -5,6 +5,7 @@ Rebuild of the legacy Docker/Laravel/MySQL stack
 `servicem8.broadlanddigital.co.uk`) on **Supabase + Cloudflare Workers**.
 
 ```
+apps/website    Public website (Next.js static export → Cloudflare Worker; homepage only so far)
 apps/portal     Customer portal (Next.js static export → Cloudflare Worker)
 apps/admin      Back-office admin  (Next.js static export → Cloudflare Worker)
 supabase/
