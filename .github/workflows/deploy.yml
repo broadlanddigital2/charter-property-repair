@@ -1,6 +1,6 @@
 name: Build & deploy
 
-# main  -> deploy portal + admin to the staging Workers, push Supabase changes
+# main  -> deploy website + portal + admin to the staging Workers, push Supabase changes
 # PRs   -> build only (no secrets needed)
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [portal, admin]
+        app: [website, portal, admin]
     defaults:
       run:
         working-directory: apps/${{ matrix.app }}

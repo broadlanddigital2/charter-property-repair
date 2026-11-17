@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cpr-website-staging",
+  "compatibility_date": "2026-10-01",
+  // Static Next.js export (next build -> out/). Only the homepage is built so far;
+  // every other path gets 404.html, which shows a "coming soon" page.
+  "assets": {
+    "directory": "./out",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    { "pattern": "charter-staging.broadlanddigital.co.uk", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+}
