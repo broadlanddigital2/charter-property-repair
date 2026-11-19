@@ -228,14 +228,9 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
           </div>
         )}
         <hr className="my-4" />
-        {!!claim.company_users?.length && (
-          <div className="alert alert-light border small py-2 mb-3">
-            <span className="fw-semibold">Company users</span> can already see this claim in the portal:{" "}
-            {claim.company_users.map((u) => u.name || u.email).join(", ")}. Activating emails the claim users below.
-          </div>
-        )}
         <ClaimUsers
           claimGUID={claim.guid}
+          companyUsers={claim.company_users}
           users={users}
           onChange={(u) => {
             setUsers(u);
@@ -245,7 +240,11 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
       </div>
       <div className="card-footer bg-body d-flex flex-wrap align-items-center justify-content-end gap-2">
         {users.length === 0 ? (
-          <span className="small text-body-secondary me-auto">Add or attach a claim user to activate this claim.</span>
+          <span className="small text-body-secondary me-auto">
+            {claim.company_users?.some((u) => Number(u.active))
+              ? "Company users can already open this claim. To email a customer their sign-in, attach them as a claim user."
+              : "Add or attach a claim user to activate this claim."}
+          </span>
         ) : (
           missing.length > 0 && (
             <span className="small text-body-secondary me-auto">To activate, add {missing.join(", ")}.</span>

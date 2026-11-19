@@ -4,19 +4,21 @@ import { toast } from "react-toastify";
 import useDebounce from "@/hooks/useDebounce";
 import { errorLogger } from "@/services/axiosService";
 import { claimAddUser, claimRemoveUser, searchContacts, updateCompanyContact } from "@/services/requestService";
-import { TClaimUser } from "@/types/api";
+import { TClaimUser, TCompanyUser } from "@/types/api";
 
 type Props = {
   claimGUID: string;
   users: TClaimUser[];
   onChange: (users: TClaimUser[]) => void;
+  /** The customer's own users: they see all of the company's claims in the portal. */
+  companyUsers?: TCompanyUser[];
 };
 
 /**
  * The people who will use this claim in the portal. Search existing users or
  * add a new one — new users are saved in Users (under the claim's customer).
  */
-const ClaimUsers = ({ claimGUID, users, onChange }: Props) => {
+const ClaimUsers = ({ claimGUID, users, onChange, companyUsers = [] }: Props) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TClaimUser[]>([]);
   const [open, setOpen] = useState(false);
@@ -99,8 +101,8 @@ const ClaimUsers = ({ claimGUID, users, onChange }: Props) => {
     <div>
       <div className="d-flex align-items-center gap-2 mb-2">
         <span className="form-label fw-semibold small mb-0">Claim users</span>
-        <span className="badge text-bg-light">{users.length}</span>
-        <span className="small text-body-secondary">People who will choose products for this claim</span>
+        <span className="badge text-bg-light">{users.length + companyUsers.length}</span>
+        <span className="small text-body-secondary">Everyone who can open this claim in the portal</span>
       </div>
 
       {users.length > 0 && (
@@ -146,6 +148,38 @@ const ClaimUsers = ({ claimGUID, users, onChange }: Props) => {
             </li>
           ))}
         </ul>
+      )}
+
+      {companyUsers.length > 0 && (
+        <ul className="list-group mb-3">
+          {companyUsers.map((u) => (
+            <li key={u.guid} className="list-group-item d-flex align-items-center gap-3 bg-body-tertiary">
+              <div className="flex-grow-1 min-w-0">
+                <div className="fw-semibold text-truncate">
+                  {u.name || u.email}{" "}
+                  <span className="badge text-bg-light border fw-normal ms-1">
+                    {u.type === "ADMIN" ? "Company user · admin" : "Company user"}
+                  </span>
+                </div>
+                <div className="small text-body-secondary text-truncate">{u.email}</div>
+              </div>
+              <div className="text-end small">
+                <span className={`badge ${Number(u.active) ? "text-bg-success" : "text-bg-secondary"}`}>
+                  {Number(u.active) ? "Active" : "Inactive"}
+                </span>
+                <div className="text-body-secondary">
+                  {Number(u.active) ? "Sees all of this customer's claims" : "Can't sign in"}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {companyUsers.length > 0 && (
+        <p className="small text-body-secondary mt-n1">
+          Company users are managed in Users. Attach someone as a claim user below to send them the claim&apos;s
+          sign-in email when you activate it.
+        </p>
       )}
 
       {!adding ? (

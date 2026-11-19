@@ -24,6 +24,7 @@ import CategoryProducts from "./CategoryProducts";
 import Pagination from "@/components/Pagination";
 import SearchBar from "@/components/SearchBar";
 import withAuth from "@/hoc/withAuth";
+import { useBackStep } from "@/lib/backStep";
 
 export type TCategoryFormData = {
   name: string;
@@ -226,6 +227,8 @@ const CategoriesPage = () => {
     setSelectedParentCategoryGUID(undefined);
     setIsCreatingNewCategory(false);
   };
+
+  useBackStep(!!selectedCategory || isCreatingNewCategory, handleCancelAction);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);

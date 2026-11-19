@@ -26,6 +26,7 @@ import {
   userUpdateFormSchema,
 } from "@/validators/schemas";
 import withAuth from "@/hoc/withAuth";
+import { useBackStep } from "@/lib/backStep";
 
 export type TUserFormData = {
   userData: Partial<
@@ -286,6 +287,8 @@ const UsersPage = () => {
     setSelectedContact(undefined);
     setIsCreatingNewUser(false);
   };
+
+  useBackStep(!!selectedContact || isCreatingNewUser, handleCancelAction);
 
   return (
     <DashboardLayout>

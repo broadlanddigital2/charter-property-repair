@@ -36,6 +36,7 @@ import Pagination from "@/components/Pagination";
 import RoomBadges from "@/components/RoomBadges";
 import ProductRooms from "./ProductRooms";
 import withAuth from "@/hoc/withAuth";
+import { useBackStep } from "@/lib/backStep";
 
 const Products = () => {
   const { loaderStore } = useStores();
@@ -316,6 +317,8 @@ const Products = () => {
   const handleCancelAction = () => {
     setSelectedProduct(null);
   };
+
+  useBackStep(!!selectedProduct, handleCancelAction);
 
   return (
     <DashboardLayout>

@@ -26,6 +26,7 @@ import {
 import CIcon from "@coreui/icons-react";
 import {
   cilAccountLogout,
+  cilArrowLeft,
   cilBasket,
   cilClipboard,
   cilBuilding,
@@ -38,6 +39,7 @@ import {
 } from "@coreui/icons";
 
 import { useStores } from "@/hooks/useStores";
+import { goBack } from "@/lib/backStep";
 
 type TNavItem = { href: string; text: string; icon: string[] } | { section: string };
 
@@ -121,6 +123,17 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               <CIcon icon={cilMenu} size="lg" />
             </CHeaderToggler>
 
+            {router.pathname !== "/dashboard" && (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 ms-2"
+                onClick={goBack}
+                aria-label="Back to the previous screen"
+              >
+                <CIcon icon={cilArrowLeft} size="sm" />
+                Back
+              </button>
+            )}
             <span className="fw-semibold fs-5 me-auto ms-2">{current?.text ?? "Admin"}</span>
 
             <CHeaderNav>
