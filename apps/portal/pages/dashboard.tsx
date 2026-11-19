@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useEffect } from "react";
 import { observer } from "mobx-react-lite";
 
 import withAuth from "@/hoc/withAuth";
@@ -13,6 +14,11 @@ const cleanAddress = (a?: string | null) => a?.replace(/\s*\n\s*/g, ", ").replac
 const Dashboard = () => {
   const { authStore } = useStores();
   const user = authStore.getUser;
+
+  // Claims can be added or set up at any time: refresh them every time the dashboard opens.
+  useEffect(() => {
+    authStore.refreshUser();
+  }, []);
   const jobs = (user?.company?.jobs || []) as TJob[];
   const open = jobs.filter((j) => !j.orders?.length && !["Completed", "Unsuccessful"].includes(j.status ?? ""));
   const ordered = jobs.filter((j) => j.orders?.length);
@@ -45,9 +51,15 @@ const Dashboard = () => {
                         <p className="text-sm text-gray-500">Claim</p>
                         <p className="text-lg font-bold">{job.job_number || "—"}</p>
                       </div>
-                      <span className="rounded-full bg-[#6D21C7]/10 px-3 py-1 text-xs font-semibold text-[#6D21C7]">
-                        Products needed
-                      </span>
+                      {rooms.length > 0 ? (
+                        <span className="rounded-full bg-[#6D21C7]/10 px-3 py-1 text-xs font-semibold text-[#6D21C7]">
+                          Products needed
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                          Being set up
+                        </span>
+                      )}
                     </div>
                     {cleanAddress(job.job_address) && <p className="mt-2 text-gray-700">{cleanAddress(job.job_address)}</p>}
                     {rooms.length > 0 && (

@@ -1,6 +1,6 @@
 import Cookies from "js-cookie";
 import Router from "next/router";
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 
 import { TUser } from "@/types/api";
 import { CookiesEnum } from "@/enums/cookies";
@@ -40,6 +40,19 @@ export class AuthStore {
       this._user = null;
     } finally {
       loaderStore.setLoading(false);
+    }
+  }
+
+  /** Re-load the user's claims in the background (no loader; keeps current data on failure). */
+  async refreshUser() {
+    if (!this._isLoggedIn) return;
+    try {
+      const userData = await getUser();
+      runInAction(() => {
+        this._user = userData;
+      });
+    } catch {
+      // keep what we have; an expired session is handled by the unauthenticated handler
     }
   }
 
