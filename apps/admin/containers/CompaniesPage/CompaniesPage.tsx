@@ -25,6 +25,7 @@ import { chunkArray } from "@/utils/common";
 import Pagination from "@/components/Pagination";
 import withAuth from "@/hoc/withAuth";
 import CompanyForm from "./CompanyForm";
+import { useBackStep } from "@/lib/backStep";
 
 export type TCompanyFormData = {
   companyData: Pick<
@@ -163,6 +164,8 @@ const CompaniesPage = () => {
   const selectedCompanyFresh = selectedCompany
     ? companies.find((c) => c.guid === selectedCompany.guid) || selectedCompany
     : null;
+  useBackStep(!!selectedCompany, () => setSelectedCompany(null));
+
   const selectedContacts = [...(selectedCompanyFresh?.contacts || [])].sort(
     (a, b) =>
       Number(b.is_primary_contact) - Number(a.is_primary_contact) ||

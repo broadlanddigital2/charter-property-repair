@@ -12,6 +12,7 @@ import { errorLogger } from "@/services/axiosService";
 import { getClaimsPage, TClaimFilter } from "@/services/requestService";
 import { TClaim } from "@/types/api";
 import ClaimSetup from "./ClaimSetup";
+import { useBackStep } from "@/lib/backStep";
 
 const PER_PAGE = 20;
 
@@ -34,6 +35,7 @@ const ClaimsPage = () => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TClaim | null>(null);
   const q = useDebounce(search, 350);
+  useBackStep(!!selected, () => setSelected(null));
 
   useEffect(() => setPage(1), [q, filter]);
 
@@ -178,6 +180,12 @@ const ClaimsPage = () => {
                                 className="d-flex align-items-center gap-1 text-truncate text-body-secondary"
                                 title={`${u.email} · sees all of ${c.company?.name ?? "the company"}'s claims`}
                               >
+                                <span
+                                  className={`badge rounded-pill ${Number(u.active) ? "text-bg-success" : "text-bg-secondary"}`}
+                                  style={{ fontSize: 10 }}
+                                >
+                                  {Number(u.active) ? "Active" : "Inactive"}
+                                </span>
                                 <span className="badge rounded-pill text-bg-light border" style={{ fontSize: 10 }}>
                                   Company
                                 </span>

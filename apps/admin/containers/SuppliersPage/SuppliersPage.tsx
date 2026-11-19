@@ -20,6 +20,7 @@ import SupplierForm from "./SuppliersForm";
 import Pagination from "@/components/Pagination";
 import SearchBar from "@/components/SearchBar";
 import withAuth from "@/hoc/withAuth";
+import { useBackStep } from "@/lib/backStep";
 
 export type TSupplierFormData = {
   name: string;
@@ -192,6 +193,8 @@ const SuppliersPage = () => {
     setSelectedSupplier(undefined);
     setIsCreatingNewSupplier(false);
   };
+
+  useBackStep(!!selectedSupplier || isCreatingNewSupplier, handleCancelAction);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);

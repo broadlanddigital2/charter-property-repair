@@ -196,10 +196,12 @@ export type TClaim = {
   rooms: TClaimRoom[];
   users: TClaimUser[];
   /** Active company users: they see all of the company's claims in the portal. */
-  company_users?: { guid: string; name: string; email: string; type: string | null }[];
+  company_users?: TCompanyUser[];
   activated_at: string | null;
   orders: number;
 };
+
+export type TCompanyUser = { guid: string; name: string; email: string; type: string | null; active: number };
 
 export type TClaimUser = {
   guid: string;
