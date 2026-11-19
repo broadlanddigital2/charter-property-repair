@@ -159,7 +159,7 @@ const ClaimsPage = () => {
                         )}
                       </td>
                       <td className="small" style={{ maxWidth: 220 }}>
-                        {c.users?.length ? (
+                        {c.users?.length || c.company_users?.length ? (
                           <div className="d-flex flex-column gap-1">
                             {c.users.map((u) => (
                               <span key={u.guid} className="d-flex align-items-center gap-1 text-truncate" title={u.email}>
@@ -168,6 +168,18 @@ const ClaimsPage = () => {
                                   style={{ fontSize: 10 }}
                                 >
                                   {Number(u.active) ? "Active" : "Inactive"}
+                                </span>
+                                <span className="text-truncate">{u.name}</span>
+                              </span>
+                            ))}
+                            {c.company_users?.map((u) => (
+                              <span
+                                key={u.guid}
+                                className="d-flex align-items-center gap-1 text-truncate text-body-secondary"
+                                title={`${u.email} · sees all of ${c.company?.name ?? "the company"}'s claims`}
+                              >
+                                <span className="badge rounded-pill text-bg-light border" style={{ fontSize: 10 }}>
+                                  Company
                                 </span>
                                 <span className="text-truncate">{u.name}</span>
                               </span>

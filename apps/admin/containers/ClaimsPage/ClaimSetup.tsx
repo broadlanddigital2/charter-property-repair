@@ -228,6 +228,12 @@ const ClaimSetup = ({ claim, onSaved, onClose }: Props) => {
           </div>
         )}
         <hr className="my-4" />
+        {!!claim.company_users?.length && (
+          <div className="alert alert-light border small py-2 mb-3">
+            <span className="fw-semibold">Company users</span> can already see this claim in the portal:{" "}
+            {claim.company_users.map((u) => u.name || u.email).join(", ")}. Activating emails the claim users below.
+          </div>
+        )}
         <ClaimUsers
           claimGUID={claim.guid}
           users={users}
