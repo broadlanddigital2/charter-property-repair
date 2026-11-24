@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 667" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#efe8f6"/>
+      <stop offset="1" stop-color="#ddd0ec"/>
+    </linearGradient>
+    <pattern id="brick" width="120" height="60" patternUnits="userSpaceOnUse">
+      <rect width="120" height="60" fill="#f7f3fb"/>
+      <path d="M0 0H120M0 30H120M60 0V30M0 30V60M120 30V60" stroke="#e2d8ee" stroke-width="3"/>
+    </pattern>
+    <clipPath id="lens"><circle cx="610" cy="330" r="128"/></clipPath>
+  </defs>
+
+  <rect width="1000" height="667" fill="url(#bg)"/>
+  <!-- wall -->
+  <rect x="90" y="90" width="820" height="487" rx="18" fill="url(#brick)"/>
+  <!-- hidden pipe run (faint) -->
+  <path d="M90 420H420Q460 420 460 380V250Q460 210 500 210H910" fill="none" stroke="#cbbbe0" stroke-width="30" stroke-linecap="round" stroke-dasharray="2 46"/>
+
+  <!-- magnifier: reveals the pipe and the leak -->
+  <g clip-path="url(#lens)">
+    <rect x="470" y="190" width="290" height="290" fill="#ffffff"/>
+    <path d="M90 420H420Q460 420 460 380V250Q460 210 500 210H910" fill="none" stroke="#662d91" stroke-width="30" stroke-linecap="round"/>
+    <circle cx="460" cy="320" r="0" fill="none"/>
+    <path d="M610 210v0" stroke="none"/>
+    <!-- leak at joint -->
+    <rect x="590" y="190" width="40" height="40" rx="6" fill="#4a1f6b"/>
+    <path d="M610 250c-14 22-22 36-22 48a22 22 0 0 0 44 0c0-12-8-26-22-48z" fill="#3fa9f5"/>
+    <path d="M650 300c-9 14-14 23-14 31a14 14 0 0 0 28 0c0-8-5-17-14-31z" fill="#3fa9f5" opacity=".75"/>
+    <!-- detection rings -->
+    <circle cx="610" cy="300" r="60" fill="none" stroke="#3fa9f5" stroke-width="5" opacity=".45"/>
+    <circle cx="610" cy="300" r="95" fill="none" stroke="#3fa9f5" stroke-width="4" opacity=".25"/>
+  </g>
+  <circle cx="610" cy="330" r="128" fill="none" stroke="#29232f" stroke-width="22"/>
+  <path d="M703 423L800 520" stroke="#29232f" stroke-width="40" stroke-linecap="round"/>
+
+  <!-- location pin -->
+  <g transform="translate(250 170)">
+    <path d="M0 0a46 46 0 0 1 46 46c0 34-46 84-46 84S-46 80-46 46A46 46 0 0 1 0 0z" fill="#662d91"/>
+    <circle cx="0" cy="46" r="17" fill="#fff"/>
+  </g>
+</svg>
