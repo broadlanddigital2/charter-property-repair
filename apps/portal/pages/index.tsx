@@ -47,7 +47,7 @@ const BUDGET_POINTS = [
 const Login = () => {
   const router = useRouter();
   const { authStore, loaderStore } = useStores();
-  const [showStaff, setShowStaff] = useState(false);
+  const [showStaff, setShowStaff] = useState(true);
 
   const { register, handleSubmit } = useForm<TLoginCredentials>();
 
