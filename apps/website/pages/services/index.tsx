@@ -18,10 +18,10 @@ const MAIN =
   `<a class="overview-item" href="#maintenance"><p class="eyebrow">Housing associations</p><h2>Looking after your homes?</h2><p>Reactive repairs, planned maintenance and capital works.</p></a>` +
   `<a class="overview-item" href="/customer-portal"><p class="eyebrow">Existing customers</p><h2>Already have a claim?</h2><p>Choose your finishes and products in the customer portal.</p></a>` +
   `</div></div></section>` +
-  `<section class="detail-section" id="insurance"><div class="wrap"><div class="plan-head"><div><p class="eyebrow">For homeowners, businesses &amp; insurers</p><h2>Insurance repairs</h2></div>` +
+  `<section class="detail-section repair-plan" id="insurance"><div class="wrap"><div class="plan-head"><div><p class="eyebrow">For homeowners, businesses &amp; insurers</p><h2>Insurance repairs</h2></div>` +
   `<p>From the first survey to handover, we manage the repair of insured damage and work alongside your insurer and loss adjuster.</p></div>` +
   `<div class="service-grid">${insurance}</div></div></section>` +
-  `<section class="detail-section paper-section" id="maintenance"><div class="wrap"><div class="plan-head"><div><p class="eyebrow">For housing associations &amp; landlords</p><h2>Property maintenance</h2></div>` +
+  `<section class="detail-section paper-section repair-plan" id="maintenance"><div class="wrap"><div class="plan-head"><div><p class="eyebrow">For housing associations &amp; landlords</p><h2>Property maintenance</h2></div>` +
   `<p>Responsive repairs, programmed works and larger improvement projects, delivered by our own trades with one point of contact.</p></div>` +
   `<div class="service-grid">${maintenance}</div></div></section>` +
   `<section class="detail-final"><div class="wrap"><p class="eyebrow">Not sure which service you need?</p><h2>Tell us what’s happened<br>and we’ll guide you.</h2>` +
