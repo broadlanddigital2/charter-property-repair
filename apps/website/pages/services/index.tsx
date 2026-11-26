@@ -10,7 +10,7 @@ const MAIN =
   `<nav aria-label="Breadcrumb" class="crumbs"><a href="/">Home</a> / Services</nav>` +
   `<p class="eyebrow">Our services · Norfolk &amp; Norwich</p><h1>Insurance repairs &amp;<br>property maintenance</h1>` +
   `<p>Reinstatement after insured damage for homeowners and businesses, and maintenance for housing associations across East Anglia, all from one team.</p>` +
-  `<div class="actions"><a class="btn" href="tel:01603944080">Call 01603 944 080</a><a class="btn secondary" href="/#enquiry-form">Send an enquiry ↗</a></div>` +
+  `<div class="actions"><a class="btn" href="tel:01603944080">Call 01603 944 080</a><a class="btn secondary" href="/contact#enquiry-form">Send an enquiry ↗</a></div>` +
   `<div class="detail-trust">✓ One point of contact <span>✓ Directly employed trades</span><span>✓ Insurance approved</span></div><p class="hero-note">Images on this page are illustrations, not photographs of Charter jobs.</p></div></section>` +
   `<section class="repair-overview" aria-label="Who we help"><div class="wrap"><div class="overview-grid hub-overview">` +
   `<a class="overview-item" href="#insurance"><p class="eyebrow">Homeowners &amp; businesses</p><h2>Had damage to your property?</h2><p>Fire, flood, storm, subsidence and impact repairs managed with your insurer.</p></a>` +
@@ -25,7 +25,7 @@ const MAIN =
   `<p>Responsive repairs, programmed works and larger improvement projects, delivered by our own trades with one point of contact.</p></div>` +
   `<div class="service-grid">${maintenance}</div></div></section>` +
   `<section class="detail-final"><div class="wrap"><p class="eyebrow">Not sure which service you need?</p><h2>Tell us what’s happened<br>and we’ll guide you.</h2>` +
-  `<div class="actions"><a class="btn" href="tel:01603944080">Call 01603 944 080</a><a class="btn secondary" href="/#enquiry-form">Send an enquiry ↗</a></div>` +
+  `<div class="actions"><a class="btn" href="tel:01603944080">Call 01603 944 080</a><a class="btn secondary" href="/contact#enquiry-form">Send an enquiry ↗</a></div>` +
   `<p>Already have a claim? <a href="/customer-portal">Open the customer portal ↗</a></p></div></section>` +
   `</main>`;
 
