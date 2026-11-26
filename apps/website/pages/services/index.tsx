@@ -6,12 +6,12 @@ const maintenance = SERVICES.filter((s) => s.group === "maintenance").map(cardHt
 
 const MAIN =
   `<main id="main">` +
-  `<section class="detail-hero"><img src="/assets/norfolk-home.webp" alt=""><div class="wrap">` +
+  `<section class="detail-hero"><img src="/assets/svc/services-hero.webp" alt="Charter team arriving at a Norfolk flint and brick home"><div class="wrap">` +
   `<nav aria-label="Breadcrumb" class="crumbs"><a href="/">Home</a> / Services</nav>` +
   `<p class="eyebrow">Our services · Norfolk &amp; Norwich</p><h1>Insurance repairs &amp;<br>property maintenance</h1>` +
   `<p>Reinstatement after insured damage for homeowners and businesses, and maintenance for housing associations across East Anglia, all from one team.</p>` +
   `<div class="actions"><a class="btn" href="tel:01603944080">Call 01603 944 080</a><a class="btn secondary" href="/#enquiry-form">Send an enquiry ↗</a></div>` +
-  `<div class="detail-trust">✓ One point of contact <span>✓ Directly employed trades</span><span>✓ Insurance approved</span></div></div></section>` +
+  `<div class="detail-trust">✓ One point of contact <span>✓ Directly employed trades</span><span>✓ Insurance approved</span></div><p class="hero-note">Images on this page are illustrations, not photographs of Charter jobs.</p></div></section>` +
   `<section class="repair-overview" aria-label="Who we help"><div class="wrap"><div class="overview-grid hub-overview">` +
   `<a class="overview-item" href="#insurance"><p class="eyebrow">Homeowners &amp; businesses</p><h2>Had damage to your property?</h2><p>Fire, flood, storm, subsidence and impact repairs managed with your insurer.</p></a>` +
   `<a class="overview-item" href="#insurance"><p class="eyebrow">Insurers &amp; loss adjusters</p><h2>Need a reinstatement partner?</h2><p>Surveys, scopes and managed repairs for your policyholders.</p></a>` +

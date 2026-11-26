@@ -54,11 +54,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
     h1: "Fire &amp;<br>smoke damage",
     intro: "Making safe, cleaning and rebuilding after a fire. One managed route from the first visit to a home you can use again.",
     trust: insuranceTrust,
-    hero: { src: "/assets/capital-works.webp", alt: "Refurbished kitchen after reinstatement" },
+    hero: { src: "/assets/svc/fire-smoke-hero.webp", alt: "Bright, fully restored kitchen with cream units and wood flooring" },
     overview: insuranceOverview("The damage, the agreed scope and approval set the programme.", "Making safe, cleaning, trades and your agreed reinstatement."),
     problem: {
       title: "When fire or smoke damages your home",
-      image: { src: "/assets/fire-smoke.webp", alt: "Fire-damaged room being stripped out for repair" },
+      image: { src: "/assets/svc/fire-smoke-problem.webp", alt: "Worker in protective suit stripping out a fire-damaged kitchen" },
       paras: [
         "Fire damage rarely stops at the room where it started. Smoke and soot travel through a property, staining walls and ceilings and leaving a smell that can linger in plaster, timber and soft finishes.",
         "Charter assesses the building, explains what needs to be removed and what can be cleaned, and coordinates the trades needed to put it right. Electrics, structure and finishes are dealt with in the right order.",
@@ -110,11 +110,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
     h1: "Track &amp;<br>trace",
     intro: "Finding hidden leaks and their source with as little disruption as possible, then putting right the damage.",
     trust: ["One point of contact", "Norfolk based", "Minimal disruption"],
-    hero: { src: "/assets/capital-works.webp", alt: "Finished room after a leak repair" },
+    hero: { src: "/assets/svc/track-trace-hero.webp", alt: "Finished bathroom with a clean, freshly decorated wall" },
     overview: insuranceOverview("Detection, approval and any drying set the programme.", "Leak detection, access, repair and making good."),
     problem: {
       title: "When you can’t see where the water is coming from",
-      image: { src: "/assets/track-trace.svg", alt: "Illustration of a hidden leak being located in a wall" },
+      image: { src: "/assets/svc/track-trace-problem.webp", alt: "Engineer checking a damp wall with a meter, dehumidifier beside him" },
       paras: [
         "A damp patch, a stain on the ceiling or a rising water bill can all point to a hidden leak. Water can travel a long way inside walls and floors before it shows, so the stain is often not where the leak is.",
         "Track and trace work locates the source before anything is opened up. That means smaller, targeted access instead of lifting whole floors or stripping walls on guesswork.",
@@ -165,11 +165,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
     h1: "Storm &amp;<br>wind damage",
     intro: "Coordinated repairs to roofs, walls, windows and interiors after storms and high winds, managed with your insurer.",
     trust: insuranceTrust,
-    hero: { src: "/assets/norfolk-home.webp", alt: "Norfolk home with a repaired roof" },
+    hero: { src: "/assets/svc/storm-wind-hero.webp", alt: "Red-brick Norfolk house with a repaired pantile roof" },
     overview: insuranceOverview("Weather, access, the agreed scope and approval set the programme.", "Make-safe, roofing and building trades, and internal repairs."),
     problem: {
       title: "When a storm damages your property",
-      image: { src: "/assets/storm-wind.webp", alt: "Storm-damaged roof with missing tiles" },
+      image: { src: "/assets/svc/storm-wind-problem.webp", alt: "Roofer on scaffolding replacing storm-damaged roof tiles" },
       paras: [
         "High winds can lift tiles, bring down chimneys and fences, and damage windows and fascias. Once the outside of a building is open to the weather, rain can quickly cause damage inside too.",
         "Charter coordinates the make-safe, the external repairs and any internal reinstatement, so the work happens in the right order with one point of contact.",
@@ -220,11 +220,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
     h1: "Building<br>subsidence",
     intro: "Managed reinstatement for properties affected by subsidence, working alongside your insurer, engineers and loss adjuster.",
     trust: insuranceTrust,
-    hero: { src: "/assets/norfolk-home.webp", alt: "Norfolk home after subsidence repairs" },
+    hero: { src: "/assets/svc/subsidence-hero.webp", alt: "Red-brick house after subsidence repairs" },
     overview: insuranceOverview("Investigations, monitoring and approval set the programme.", "Coordination with engineers, structural and cosmetic repairs."),
     problem: {
       title: "When the ground beneath your home moves",
-      image: { src: "/assets/subsidence.webp", alt: "Cracked brickwork caused by subsidence" },
+      image: { src: "/assets/svc/subsidence-problem.webp", alt: "Engineer measuring a stepped crack in brickwork" },
       paras: [
         "Subsidence can show as diagonal cracks around doors and windows, doors that start to stick, or gaps between walls and ceilings. It usually needs investigation before any repair can be designed.",
         "Subsidence claims often involve several parties: your insurer, a loss adjuster and engineers. Charter carries out the agreed repairs and keeps the work coordinated with them.",
@@ -275,11 +275,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
     h1: "Impact<br>damage",
     intro: "Repairing walls, roofs and structures damaged by vehicles, fallen trees or other impacts, managed with your insurer.",
     trust: insuranceTrust,
-    hero: { src: "/assets/norfolk-home.webp", alt: "Norfolk home with a rebuilt wall" },
+    hero: { src: "/assets/svc/impact-hero.webp", alt: "Brick house with a rebuilt front garden wall" },
     overview: insuranceOverview("Safety, the agreed scope and approval set the programme.", "Make-safe, structural rebuild and finishing."),
     problem: {
       title: "When something hits your property",
-      image: { src: "/assets/impact.webp", alt: "Wall damaged by an impact" },
+      image: { src: "/assets/svc/impact-problem.webp", alt: "Bricklayer rebuilding a damaged garden wall" },
       paras: [
         "A vehicle, a fallen tree or falling debris can damage brickwork, roofs, windows and structural walls. Even where the damage looks local, the structure around it may need checking.",
         "Charter makes the property safe where needed, assesses the damage and coordinates the rebuild, matching materials and finishes as closely as possible.",
@@ -330,7 +330,7 @@ export const SERVICE_PAGES: ServiceContent[] = [
     h1: "Reactive<br>emergency repairs",
     intro: "When something goes wrong, we help make the property safe, then arrange the permanent repair with your insurer.",
     trust: ["One point of contact", "Norfolk based", "Make safe, then repair"],
-    hero: { src: "/assets/norfolk-home.webp", alt: "Norfolk home made safe after damage" },
+    hero: { src: "/assets/svc/emergency-hero.webp", alt: "Brick bungalow at dusk with lights on, secure and repaired" },
     overview: [
       { eyebrow: "Who we help", title: "Insurers &amp; their customers", text: "Responsive support when a property needs urgent attention." },
       { eyebrow: "First response", title: "Make safe first", text: "Securing the property to prevent further damage." },
@@ -339,7 +339,7 @@ export const SERVICE_PAGES: ServiceContent[] = [
     ],
     problem: {
       title: "When damage can’t wait",
-      image: { src: "/assets/emergency.webp", alt: "Emergency repair in progress" },
+      image: { src: "/assets/svc/emergency-problem.webp", alt: "Engineer boarding up a broken window" },
       paras: [
         "A broken window, a failed roof covering or an escape of water can leave a property insecure or open to further damage. The first priority is to make it safe.",
         "Charter provides responsive repair support for insurance companies and their customers, then coordinates the permanent repair once it has been agreed.",
@@ -390,7 +390,7 @@ export const SERVICE_PAGES: ServiceContent[] = [
     h1: "Reactive<br>maintenance",
     intro: "Day-to-day repairs for housing associations and landlords, carried out by our trades and coordinated through one point of contact.",
     trust: maintenanceTrust,
-    hero: { src: "/assets/norfolk-home.webp", alt: "Row of Norfolk homes" },
+    hero: { src: "/assets/svc/reactive-maintenance-hero.webp", alt: "Tidy, repaired kitchen with white units" },
     overview: [
       { eyebrow: "Who we help", title: "Housing associations &amp; landlords", text: "Responsive repairs across your properties." },
       { eyebrow: "How jobs arrive", title: "Raised by your team", text: "Jobs agreed and prioritised with you." },
@@ -399,7 +399,7 @@ export const SERVICE_PAGES: ServiceContent[] = [
     ],
     problem: {
       title: "Keeping homes in good repair, day to day",
-      image: { src: "/assets/reactive-maintenance.webp", alt: "Tradesperson carrying out a repair" },
+      image: { src: "/assets/svc/reactive-maintenance-problem.webp", alt: "Tradesperson repairing pipework under a kitchen sink" },
       paras: [
         "Leaks, broken fittings, damaged doors and worn kitchens and bathrooms all need fixing promptly, with the least disruption for residents.",
         "Charter provides responsive, multi-trade repairs for housing associations, with one point of contact for your team and work completed by our own trades.",
@@ -450,7 +450,7 @@ export const SERVICE_PAGES: ServiceContent[] = [
     h1: "Planned<br>maintenance",
     intro: "Scheduled works that help housing associations keep homes safe, comfortable and in good repair.",
     trust: maintenanceTrust,
-    hero: { src: "/assets/capital-works.webp", alt: "New kitchen installed as part of a planned programme" },
+    hero: { src: "/assets/svc/planned-maintenance-hero.webp", alt: "Row of flint and brick cottages after planned works" },
     overview: [
       { eyebrow: "Who we help", title: "Housing associations", text: "Programmed works across your housing stock." },
       { eyebrow: "Planning", title: "Agreed programmes", text: "Works scheduled around your priorities." },
@@ -459,7 +459,7 @@ export const SERVICE_PAGES: ServiceContent[] = [
     ],
     problem: {
       title: "Looking after homes before problems start",
-      image: { src: "/assets/planned-maintenance.webp", alt: "Planned maintenance works on a home" },
+      image: { src: "/assets/svc/planned-maintenance-problem.webp", alt: "Two fitters installing a new kitchen" },
       paras: [
         "Planned works such as kitchen and bathroom replacements, external redecoration and window and door upgrades keep homes in good condition and reduce reactive repairs later.",
         "Charter delivers programmed works for housing associations, coordinating the trades and keeping residents informed throughout.",
@@ -510,7 +510,7 @@ export const SERVICE_PAGES: ServiceContent[] = [
     h1: "Capital<br>works",
     intro: "Larger improvement and refurbishment projects for housing associations, bringing the required trades together under one team.",
     trust: maintenanceTrust,
-    hero: { src: "/assets/capital-works.webp", alt: "Refurbished home interior" },
+    hero: { src: "/assets/svc/capital-works-hero.webp", alt: "Refurbished living room with a bay window and fireplace" },
     overview: [
       { eyebrow: "Who we help", title: "Housing associations", text: "Improvement and refurbishment projects." },
       { eyebrow: "Scope", title: "From brief to handover", text: "Projects planned and delivered as one." },
@@ -519,7 +519,7 @@ export const SERVICE_PAGES: ServiceContent[] = [
     ],
     problem: {
       title: "Improving homes on a bigger scale",
-      image: { src: "/assets/capital-works.webp", alt: "Refurbishment works in progress" },
+      image: { src: "/assets/svc/capital-works-problem.webp", alt: "Two site workers reviewing plans in a stripped-out room" },
       paras: [
         "Refurbishments, conversions and whole-home upgrades involve many trades and careful sequencing. Keeping them coordinated is what keeps a project on track.",
         "Charter manages capital works for housing associations, bringing the required trades together and keeping your team updated from start to finish.",

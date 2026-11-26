@@ -50,7 +50,7 @@ export function buildServiceMain(c: ServiceContent): string {
     `<nav aria-label="Breadcrumb" class="crumbs"><a href="/">Home</a> / <a href="/services">Services</a> / ${esc(c.name)}</nav>` +
     `<p class="eyebrow">${group} · Norfolk &amp; Norwich</p><h1>${c.h1}</h1><p>${c.intro}</p>` +
     `<div class="actions"><a class="btn" href="tel:01603944080">Call 01603 944 080</a><a class="btn secondary" href="${enquiry}">Send an enquiry ↗</a></div>` +
-    `<div class="detail-trust">✓ ${c.trust[0]} <span>✓ ${c.trust[1]}</span><span>✓ ${c.trust[2]}</span></div></div></section>`;
+    `<div class="detail-trust">✓ ${c.trust[0]} <span>✓ ${c.trust[1]}</span><span>✓ ${c.trust[2]}</span></div><p class="hero-note">Images on this page are illustrations, not photographs of Charter jobs.</p></div></section>`;
 
   const overview =
     `<section class="repair-overview" aria-label="At a glance"><div class="wrap"><div class="overview-grid">` +
