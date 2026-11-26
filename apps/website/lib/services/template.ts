@@ -101,7 +101,7 @@ export function buildServiceMain(c: ServiceContent): string {
       `<div class="before-after">` +
       `<figure><img src="/assets/ba/${c.slug}-before.webp" alt="${c.transformation.before}" loading="lazy" width="1000" height="1000"><figcaption>Before</figcaption></figure>` +
       `<figure><img src="/assets/ba/${c.slug}-after.webp" alt="${c.transformation.after}" loading="lazy" width="1000" height="1000"><figcaption>After</figcaption></figure>` +
-      `</div></div></section>`
+      `</div><p class="evidence-note">Illustrations of typical work, not photographs of a Charter job.</p></div></section>`
     : "";
 
   const partner =
