@@ -22,3 +22,6 @@ verify_jwt = false   # authenticates via x-cron-secret or admin JWT itself
 
 [functions.reporting-api]
 verify_jwt = false   # authenticates via x-api-key or admin JWT itself
+
+[functions.send-enquiry]
+verify_jwt = false   # public website form; honeypot + rate limit
