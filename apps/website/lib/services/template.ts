@@ -43,7 +43,7 @@ const esc = (s: string) => s.replace(/&(?!amp;|lt;|gt;|#)/g, "&amp;");
 
 export function buildServiceMain(c: ServiceContent): string {
   const group = GROUP_LABEL[c.group];
-  const enquiry = "/#enquiry-form";
+  const enquiry = "/contact#enquiry-form";
 
   const hero =
     `<section class="detail-hero"><img src="${c.hero.src}" alt="${c.hero.alt}"><div class="wrap">` +

@@ -30,7 +30,7 @@ const haPartner = (what: string): ServiceContent["partner"] => ({
     title: "Looking for a maintenance partner?",
     text: "Tell us about your properties, the work you need and how you like jobs to be raised.",
     cta: "Send an enquiry ↗",
-    href: "/#enquiry-form",
+    href: "/contact#enquiry-form",
   },
 });
 
