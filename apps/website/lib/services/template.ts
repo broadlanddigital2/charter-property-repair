@@ -18,6 +18,7 @@ export type ServiceContent = {
   problem: { title: string; image: { src: string; alt: string }; paras: string[] };
   plan: { intro: string; stages: { icon: Icon; title: string; items: string[] }[]; note: string };
   process: { intro: string; steps: { label: string; title: string; text: string }[] };
+  transformation?: { lede: string; before: string; after: string };
   partner: { title: string; paras: string[]; aside: { eyebrow: string; title: string; text: string; cta: string; href: string } };
   faqs: { q: string; a: string }[];
   related: string[]; // slugs
@@ -95,6 +96,14 @@ export function buildServiceMain(c: ServiceContent): string {
       c.group === "insurance" ? "Call the team and quote your claim reference." : "Call the team about your properties or a job."
     }</p></div><a href="tel:01603944080">01603 944 080 <span aria-hidden="true">↗</span></a></div></div></div></section>`;
 
+  const transformation = c.transformation
+    ? `<section class="detail-section paper-section"><div class="wrap"><h2>See the transformation</h2><p class="section-lede">${c.transformation.lede}</p>` +
+      `<div class="before-after">` +
+      `<figure><img src="/assets/ba/${c.slug}-before.webp" alt="${c.transformation.before}" loading="lazy" width="1000" height="1000"><figcaption>Before</figcaption></figure>` +
+      `<figure><img src="/assets/ba/${c.slug}-after.webp" alt="${c.transformation.after}" loading="lazy" width="1000" height="1000"><figcaption>After</figcaption></figure>` +
+      `</div></div></section>`
+    : "";
+
   const partner =
     `<section class="detail-section "><div class="wrap"><h2>${c.partner.title}</h2><div class="detail-split"><div>` +
     c.partner.paras.map((p) => `<p>${p}</p>`).join("") +
@@ -124,7 +133,7 @@ export function buildServiceMain(c: ServiceContent): string {
       : `<p>Prefer email? <a href="mailto:mail@charterpropertyrepairs.co.uk">mail@charterpropertyrepairs.co.uk</a></p>`) +
     `</div></section>`;
 
-  return `<main id="main">${hero}${overview}${problem}${plan}${process}${partner}${faq}${related}${final}</main>`;
+  return `<main id="main">${hero}${overview}${problem}${plan}${process}${transformation}${partner}${faq}${related}${final}</main>`;
 }
 
 export function faqLd(c: ServiceContent): string {
