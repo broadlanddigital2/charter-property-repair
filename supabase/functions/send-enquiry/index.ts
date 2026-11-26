@@ -2,11 +2,28 @@
 //   POST /functions/v1/send-enquiry  (JSON: name, email, phone, postcode, type, reference, message, page, company)
 // Public endpoint (no login). Protected by a honeypot field, validation and a
 // per-IP rate limit. Every submission is logged in private.enquiries first.
+// Captcha: Cloudflare Turnstile (secret TURNSTILE_SECRET_KEY; Cloudflare's always-pass test secret until set).
 // Secret: SENDGRID_API_KEY. Settings (app_config): ENQUIRY_TO, ENQUIRY_FROM, ENQUIRY_FROM_NAME.
 import { config, corsHeaders, json, serviceClient } from "../_shared/http.ts";
 
 const LIMITS = { name: 120, email: 200, phone: 40, postcode: 15, type: 60, reference: 80, message: 2500, page: 200 };
 const MAX_PER_HOUR = 5;
+const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
+
+async function captchaOk(token: string, ip: string): Promise<boolean> {
+  if (!token) return false;
+  const form = new FormData();
+  form.append("secret", Deno.env.get("TURNSTILE_SECRET_KEY") ?? TURNSTILE_TEST_SECRET);
+  form.append("response", token);
+  if (ip) form.append("remoteip", ip);
+  try {
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body: form });
+    const out = await res.json();
+    return Boolean(out.success);
+  } catch {
+    return false;
+  }
+}
 
 const clean = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "").trim().slice(0, max);
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -45,6 +62,9 @@ Deno.serve(async (req) => {
 
   const admin = serviceClient();
   const ip = (req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim();
+  if (!(await captchaOk(clean(body["cf-turnstile-response"], 4096), ip))) {
+    return json({ detail: "Please complete the security check and try again." }, 403);
+  }
   const ipHash = ip ? await sha256(ip + (Deno.env.get("SUPABASE_URL") ?? "")) : null;
 
   const { data: id, error: insErr } = await admin.rpc("enquiry_log", {
@@ -56,7 +76,7 @@ Deno.serve(async (req) => {
 
   const apiKey = Deno.env.get("SENDGRID_API_KEY");
   const to = (await config(admin, "ENQUIRY_TO")) ?? "mail@charterpropertyrepairs.co.uk";
-  const from = (await config(admin, "ENQUIRY_FROM")) ?? "no-reply@charterpropertyrepairs.co.uk";
+  const from = (await config(admin, "ENQUIRY_FROM")) ?? "noreply@charterpropertyrepairs.co.uk";
   const fromName = (await config(admin, "ENQUIRY_FROM_NAME")) ?? "Charter Property Repairs website";
 
   const rows: [string, string][] = [

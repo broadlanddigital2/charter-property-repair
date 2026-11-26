@@ -52,3 +52,4 @@ header{background:#fff}.nav{min-height:123px}.brand img{display:block;width:108p
 .contact-map{display:grid;grid-template-columns:340px minmax(0,1fr);min-height:460px}.contact-map iframe{position:static;height:100%;min-height:460px}.contact-map-card{position:static;max-width:none;box-shadow:none;border-radius:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:32px}@media(max-width:750px){.contact-map{grid-template-columns:1fr}.contact-map iframe{min-height:320px;height:320px}}
 
 .hp{position:absolute!important;left:-10000px!important;width:1px;height:1px;overflow:hidden}#form-status.form-ok{color:#1d7a46;font-weight:600}#form-status.form-error{color:#b3261e;font-weight:600}#enquiry-form button[disabled]{opacity:.7;cursor:wait}
+.enquiry-captcha{margin:18px 0 14px;min-height:65px}

@@ -4,6 +4,18 @@
   if (!form || form.dataset.bound) return;
   form.dataset.bound = '1';
   const ENDPOINT = 'https://gnnabvwdlpsxmdgvthpi.supabase.co/functions/v1/send-enquiry';
+  // Cloudflare Turnstile captcha. Replace with the real site key for the website's domains;
+  // until then Cloudflare's test key (always passes, shows a "testing" note) is used.
+  const TURNSTILE_SITE_KEY = '1x00000000000000000000AA';
+  const holder = document.createElement('div');
+  holder.className = 'enquiry-captcha';
+  form.querySelector('button[type=submit]').before(holder);
+  let widget = null;
+  window.onEnquiryCaptcha = () => { widget = window.turnstile.render(holder, { sitekey: TURNSTILE_SITE_KEY, theme: 'light', size: 'flexible' }); };
+  const ts = document.createElement('script');
+  ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onEnquiryCaptcha';
+  ts.async = true; ts.defer = true;
+  document.head.appendChild(ts);
   const status = document.getElementById('form-status');
   const button = form.querySelector('button[type=submit]');
   const label = button ? button.textContent : '';
@@ -13,6 +25,7 @@
     event.preventDefault();
     const data = Object.fromEntries(new FormData(form).entries());
     data.page = location.pathname;
+    if (!data['cf-turnstile-response']) { say('Please complete the security check above the button.', false); return; }
     button.disabled = true; button.textContent = 'Sending…'; say('', true);
     try {
       const res = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -24,6 +37,7 @@
       say((err && err.message ? err.message : 'We couldn’t send your enquiry.') + ' You can also call 01603 944 080 or email mail@charterpropertyrepairs.co.uk.', false);
     } finally {
       button.disabled = false; button.textContent = label;
+      if (window.turnstile && widget !== null) window.turnstile.reset(widget);
     }
   });
 })();
