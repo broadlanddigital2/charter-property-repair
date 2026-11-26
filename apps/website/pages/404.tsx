@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Script from "next/script";
+import ReviewsBlock from "../components/ReviewsBlock";
 import { HEADER, FOOTER } from "../lib/chrome";
 import { FONT_URL, withPortalLinks } from "../lib/site";
 
@@ -13,7 +14,8 @@ const body =
   `<a href="mailto:mail@charterpropertyrepairs.co.uk">mail@charterpropertyrepairs.co.uk</a>.</p></div>` +
   `<div class="actions"><a class="btn" href="/">Back to the homepage</a>` +
   `<a class="btn secondary" href="tel:01603944080">Call 01603 944 080</a></div></div></section></main>` +
-  withPortalLinks(FOOTER);
+  "";
+const bottom = withPortalLinks(FOOTER);
 
 export default function NotFound() {
   return (
@@ -24,6 +26,8 @@ export default function NotFound() {
         <link href={FONT_URL} rel="stylesheet" />
       </Head>
       <div dangerouslySetInnerHTML={{ __html: body }} />
+      <ReviewsBlock />
+      <div dangerouslySetInnerHTML={{ __html: bottom }} />
       <Script id="menu" strategy="afterInteractive">
         {"const toggle=document.querySelector('.menu'),nav=document.getElementById('nav');function setMenu(open){toggle.setAttribute('aria-expanded',open);nav.classList.toggle('open',open)}toggle.addEventListener('click',()=>setMenu(toggle.getAttribute('aria-expanded')==='false'));document.addEventListener('keydown',event=>{if(event.key==='Escape'&&toggle.getAttribute('aria-expanded')==='true'){setMenu(false);toggle.focus()}});"}
       </Script>
