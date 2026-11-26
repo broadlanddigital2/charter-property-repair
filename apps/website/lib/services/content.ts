@@ -85,6 +85,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
         { label: "Handover", title: "We hand your home back", text: "We walk through the finished work with you and sort any snagging before we sign off." },
       ],
     },
+    transformation: {
+      lede: "A kitchen blackened by fire and smoke, then fully reinstated with clean walls, new units and a new extractor.",
+      before: "Kitchen with smoke-blackened walls, ceiling and units after a fire",
+      after: "The same kitchen after reinstatement with clean walls, cream units and a new extractor hood",
+    },
     partner: insurerPartner("fire and smoke damage repairs"),
     faqs: [
       { q: "Can I stay in my home?", a: "That depends on the damage and the work needed. Talk to your insurer about access, essential facilities or accommodation. Charter can explain how the proposed work affects the use of rooms. Any accommodation needs to be agreed with your insurer." },
@@ -136,6 +141,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
         { label: "Handover", title: "We hand your home back", text: "We check the repair and finishes with you before we sign off." },
       ],
     },
+    transformation: {
+      lede: "The leak traced to one point and accessed through a small opening, then the wall made good and redecorated.",
+      before: "Room with a damp-stained wall and a small access opening exposing the leaking pipe",
+      after: "The same wall after the leak repair, re-plastered and redecorated",
+    },
     partner: insurerPartner("leak detection and repairs"),
     faqs: [
       { q: "Is track and trace covered by my insurance?", a: "Many home insurance policies include cover for finding and accessing a leak, often called trace and access. Check your policy or ask your insurer, who confirms the cover available." },
@@ -185,6 +195,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
         { label: "Repairs", title: "We repair inside and out", text: "External repairs come first, then any internal damage is put right." },
         { label: "Handover", title: "We hand your home back", text: "We check the finished work with you and sort any snagging before we sign off." },
       ],
+    },
+    transformation: {
+      lede: "A bungalow roof with tiles torn away by high winds, then repaired with matching tiles.",
+      before: "Bungalow roof with tiles torn off and the roof structure exposed after a storm",
+      after: "The same bungalow with the roof repaired using matching tiles",
     },
     partner: insurerPartner("storm damage repairs"),
     faqs: [
@@ -236,6 +251,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
         { label: "Handover", title: "We hand your home back", text: "We check the finished work with you before we sign off." },
       ],
     },
+    transformation: {
+      lede: "Brickwork split by a stepped subsidence crack, then repaired and repointed once the structure was stable.",
+      before: "Brick wall with a stepped crack running from the window sill to the ground",
+      after: "The same brick wall after crack repair and repointing",
+    },
     partner: insurerPartner("subsidence repairs"),
     faqs: [
       { q: "How long does monitoring take?", a: "That depends on the property and what the investigation shows. Your insurer or loss adjuster can explain the monitoring period for your claim." },
@@ -285,6 +305,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
         { label: "Rebuild", title: "We rebuild and repair", text: "Damaged walls, roofs and openings are rebuilt, then interiors put right." },
         { label: "Handover", title: "We hand your property back", text: "We check the finished work with you before we sign off." },
       ],
+    },
+    transformation: {
+      lede: "A front garden wall knocked down by an impact, then rebuilt with matched brickwork.",
+      before: "Front garden wall partly collapsed with bricks scattered on the drive",
+      after: "The same garden wall rebuilt with matching brickwork",
     },
     partner: insurerPartner("impact damage repairs"),
     faqs: [
@@ -341,6 +366,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
         { label: "Handover", title: "We sign off the work", text: "We check the finished repair with you before we sign off." },
       ],
     },
+    transformation: {
+      lede: "A smashed window made safe and then replaced with new glazing.",
+      before: "Window with a smashed pane of glass",
+      after: "The same window with the glass replaced",
+    },
     partner: insurerPartner("emergency and permanent repairs"),
     faqs: [
       { q: "What counts as an emergency?", a: "Anything that leaves a property unsafe, insecure or at risk of further damage, such as a broken window, a roof open to the weather or an escape of water." },
@@ -395,6 +425,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
         { label: "Report", title: "We report back", text: "Notes and photos are shared so your records stay current." },
         { label: "Close", title: "The job is closed", text: "Once you’re happy, the job is signed off." },
       ],
+    },
+    transformation: {
+      lede: "Damaged kitchen unit doors and panels repaired and replaced in a tenanted home.",
+      before: "Kitchen units with broken doors and peeling panels",
+      after: "The same kitchen units with new doors and panels fitted",
     },
     partner: haPartner("reactive repairs"),
     faqs: [
@@ -451,6 +486,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
         { label: "Completion", title: "We report and sign off", text: "Progress and completion are reported and any snagging resolved." },
       ],
     },
+    transformation: {
+      lede: "A dated kitchen replaced as part of a planned programme, with new units, worktops and flooring.",
+      before: "Dated kitchen with pine-effect units and patterned flooring",
+      after: "The same kitchen after replacement with sage green units, new worktops and wood-effect flooring",
+    },
     partner: haPartner("planned maintenance programmes"),
     faqs: [
       { q: "What kinds of planned works do you deliver?", a: "Typical programmes include kitchens, bathrooms, windows and doors, and external redecoration. Talk to us about your programme." },
@@ -505,6 +545,11 @@ export const SERVICE_PAGES: ServiceContent[] = [
         { label: "Delivery", title: "We deliver the works", text: "The trades complete the project with regular updates." },
         { label: "Handover", title: "We hand over", text: "Completion checks, snagging and handover documents close the project." },
       ],
+    },
+    transformation: {
+      lede: "A room stripped back to brick and joists, then refurbished into a finished living space.",
+      before: "Room stripped back to bare brick walls, exposed ceiling joists and a bare floor",
+      after: "The same room refurbished with plastered walls, a restored fireplace and new flooring",
     },
     partner: haPartner("capital improvement projects"),
     faqs: [
